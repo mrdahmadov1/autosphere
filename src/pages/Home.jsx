@@ -1,13 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { carsData } from '../data/cars';
+import { db } from '../firebase/config';
+import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { carsData } from '../data/cars'; // Keeping as fallback
 
 function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBrand, setFilterBrand] = useState('');
-  const [filteredCars, setFilteredCars] = useState(carsData);
+  const [filteredCars, setFilteredCars] = useState([]);
+  const [allCars, setAllCars] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const uniqueBrands = [...new Set(carsData.map((car) => car.brand))];
+  useEffect(() => {
+    async function fetchCars() {
+      try {
+        const carsQuery = query(collection(db, 'cars'), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(carsQuery);
+
+        if (!querySnapshot.empty) {
+          const carsFromFirestore = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+            // Convert Firebase timestamp to date
+            createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date(),
+          }));
+          setAllCars(carsFromFirestore);
+          setFilteredCars(carsFromFirestore);
+        } else {
+          // Fallback to static data if no cars in Firestore
+          setAllCars(carsData);
+          setFilteredCars(carsData);
+        }
+      } catch (error) {
+        console.error('Error fetching cars:', error);
+        setError('Failed to load cars. Using default data.');
+        // Fallback to static data on error
+        setAllCars(carsData);
+        setFilteredCars(carsData);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCars();
+  }, []);
+
+  const uniqueBrands = [...new Set(allCars.map((car) => car.brand))];
 
   const handleSearch = (e) => {
     const term = e.target.value;
@@ -22,7 +61,7 @@ function Home() {
   };
 
   const filterCars = (term, brand) => {
-    let filtered = carsData;
+    let filtered = allCars;
 
     if (term) {
       filtered = filtered.filter(
@@ -85,7 +124,15 @@ function Home() {
             <span className="text-lg text-primary">{filteredCars.length} cars found</span>
           </div>
 
-          {filteredCars.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-20">
+              <p className="text-xl text-neutral">Loading cars...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-20">
+              <p className="text-xl text-red-500">{error}</p>
+            </div>
+          ) : filteredCars.length === 0 ? (
             <div className="text-center py-20">
               <h3 className="text-2xl font-bold text-neutral">
                 No cars found matching your criteria
@@ -251,10 +298,9 @@ function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-3">Price Match Guarantee</h3>
+              <h3 className="text-xl font-bold mb-3">No Hidden Fees</h3>
               <p className="text-neutral/70">
-                Found a better price elsewhere? We'll match it, ensuring you get the best deal
-                possible.
+                We believe in transparency. The price you see is the price you pay.
               </p>
             </div>
           </div>

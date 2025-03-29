@@ -1,16 +1,108 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { carsData } from '../data/cars';
+import { db } from '../firebase/config';
+import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { carsData } from '../data/cars'; // Keeping as fallback
 
 function CarDetails() {
   const { id } = useParams();
-  const car = carsData.find((car) => car.id === parseInt(id));
+  const [car, setCar] = useState(null);
+  const [similarCars, setSimilarCars] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  if (!car) {
+  useEffect(() => {
+    async function fetchCarData() {
+      try {
+        // First try to fetch from Firestore
+        const carDocRef = doc(db, 'cars', id);
+        const carDoc = await getDoc(carDocRef);
+
+        let carData;
+
+        if (carDoc.exists()) {
+          carData = {
+            id: carDoc.id,
+            ...carDoc.data(),
+            createdAt: carDoc.data().createdAt ? carDoc.data().createdAt.toDate() : new Date(),
+          };
+          setCar(carData);
+
+          // Fetch similar cars
+          if (carData) {
+            const similarCarsQuery = query(
+              collection(db, 'cars'),
+              where('brand', '==', carData.brand),
+              where('id', '!=', id),
+              limit(3)
+            );
+
+            const similarCarsSnapshot = await getDocs(similarCarsQuery);
+
+            if (!similarCarsSnapshot.empty) {
+              const similarCarsData = similarCarsSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              }));
+              setSimilarCars(similarCarsData);
+            } else {
+              // Fallback to static data for similar cars
+              const staticSimilarCars = carsData
+                .filter((c) => c.id !== parseInt(id) && c.brand === carData.brand)
+                .slice(0, 3);
+              setSimilarCars(staticSimilarCars);
+            }
+          }
+        } else {
+          // Try to find car in static data
+          const staticCar = carsData.find((c) => c.id === parseInt(id));
+          if (staticCar) {
+            setCar(staticCar);
+            // Get similar cars from static data
+            const staticSimilarCars = carsData
+              .filter((c) => c.id !== parseInt(id) && c.brand === staticCar.brand)
+              .slice(0, 3);
+            setSimilarCars(staticSimilarCars);
+          } else {
+            setError('Car not found');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching car:', error);
+        setError('Failed to load car details');
+
+        // Try to find car in static data as fallback
+        const staticCar = carsData.find((c) => c.id === parseInt(id));
+        if (staticCar) {
+          setCar(staticCar);
+          // Get similar cars from static data
+          const staticSimilarCars = carsData
+            .filter((c) => c.id !== parseInt(id) && c.brand === staticCar.brand)
+            .slice(0, 3);
+          setSimilarCars(staticSimilarCars);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCarData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-8 py-20 text-center">
+        <p className="text-xl">Loading car details...</p>
+      </div>
+    );
+  }
+
+  if (error || !car) {
     return (
       <div className="max-w-7xl mx-auto px-8 py-20 text-center">
         <h1 className="text-4xl font-bold mb-6 text-neutral-dark">Car Not Found</h1>
         <p className="mb-8 text-neutral/70">
-          The car you're looking for doesn't exist or has been removed.
+          {error || "The car you're looking for doesn't exist or has been removed."}
         </p>
         <Link to="/" className="btn-primary">
           Back to Home
@@ -237,11 +329,9 @@ function CarDetails() {
       <section className="py-16 px-8 bg-neutral-light">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl font-bold mb-10 text-neutral-dark">Similar Vehicles</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {carsData
-              .filter((otherCar) => otherCar.id !== car.id && otherCar.brand === car.brand)
-              .slice(0, 3)
-              .map((similarCar) => (
+          {similarCars.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {similarCars.map((similarCar) => (
                 <div key={similarCar.id} className="card group">
                   <div className="relative overflow-hidden h-48">
                     <img
@@ -251,16 +341,16 @@ function CarDetails() {
                     />
                   </div>
                   <div className="p-6">
-                    <h3 className="text-lg font-bold mb-2 text-neutral-dark">
+                    <h3 className="text-xl font-bold mb-2 text-neutral-dark">
                       {similarCar.brand} {similarCar.model}
                     </h3>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-end">
                       <span className="text-xl font-bold text-primary">
                         ${similarCar.price.toLocaleString()}
                       </span>
                       <Link
                         to={`/cars/${similarCar.id}`}
-                        className="text-primary hover:text-primary-dark font-medium"
+                        className="text-sm text-accent hover:underline"
                       >
                         View Details
                       </Link>
@@ -268,7 +358,10 @@ function CarDetails() {
                   </div>
                 </div>
               ))}
-          </div>
+            </div>
+          ) : (
+            <p className="text-center text-neutral/70">No similar vehicles found.</p>
+          )}
         </div>
       </section>
     </div>

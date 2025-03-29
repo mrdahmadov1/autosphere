@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/useAuth';
 
 function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { currentUser } = useAuth();
 
   const navItems = [
     { name: 'Home', path: '/' },
@@ -36,6 +38,52 @@ function Navbar() {
               {item.name}
             </Link>
           ))}
+        </div>
+
+        {/* Auth Navigation - Desktop */}
+        <div className="hidden md:flex items-center">
+          {currentUser ? (
+            <div className="flex items-center space-x-6">
+              <Link
+                to="/add-car"
+                className="text-white bg-accent hover:bg-accent/80 px-4 py-2 rounded-lg font-medium transition-colors duration-300"
+              >
+                Add Car
+              </Link>
+              <Link to="/profile" className="text-white flex items-center hover:text-accent">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                {currentUser.displayName || 'Profile'}
+              </Link>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-4">
+              <Link
+                to="/login"
+                className="text-white hover:text-accent transition-colors duration-300"
+              >
+                Log In
+              </Link>
+              <Link
+                to="/register"
+                className="text-white bg-accent hover:bg-accent/80 px-4 py-2 rounded-lg font-medium transition-colors duration-300"
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -84,6 +132,43 @@ function Navbar() {
                 {item.name}
               </Link>
             ))}
+
+            {/* Auth Links - Mobile */}
+            {currentUser ? (
+              <>
+                <Link
+                  to="/profile"
+                  className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  My Profile
+                </Link>
+                <Link
+                  to="/add-car"
+                  className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Add Car
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Log In
+                </Link>
+                <Link
+                  to="/register"
+                  className="py-3 text-neutral-dark font-medium text-lg"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
