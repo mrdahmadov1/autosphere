@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
-import { db, storage } from '../firebase/config';
+import { db } from '../firebase/config';
 import { collection, addDoc, updateDoc, arrayUnion, doc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 function AddCar() {
   const [formData, setFormData] = useState({
@@ -78,20 +77,15 @@ function AddCar() {
       setLoading(true);
       setError('');
 
-      // Upload image to Firebase Storage
-      const storageRef = ref(storage, `car-images/${currentUser.uid}/${Date.now()}-${image.name}`);
+      // Convert image to base64 string
+      const reader = new FileReader();
 
-      // Add metadata with CORS headers
-      const metadata = {
-        contentType: image.type,
-        customMetadata: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
-        },
-      };
-
-      const uploadResult = await uploadBytes(storageRef, image, metadata);
-      const imageUrl = await getDownloadURL(uploadResult.ref);
+      // Create a Promise to handle the async FileReader
+      const imageData = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+        reader.readAsDataURL(image);
+      });
 
       // Clean up features array (remove empty strings)
       const cleanedFeatures = formData.features.filter((feature) => feature.trim() !== '');
@@ -100,7 +94,7 @@ function AddCar() {
       const carData = {
         ...formData,
         features: cleanedFeatures,
-        image: imageUrl,
+        image: imageData,
         userId: currentUser.uid,
         createdAt: new Date(),
         price: parseInt(formData.price),
@@ -119,7 +113,7 @@ function AddCar() {
           model: formData.model,
           year: parseInt(formData.year),
           price: parseInt(formData.price),
-          image: imageUrl,
+          image: imageData,
         }),
       });
 
