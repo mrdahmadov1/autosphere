@@ -17,6 +17,8 @@ export const TextField = React.memo(
     touched = false,
     placeholder = '',
     className = '',
+    leftAddon,
+    rightAddon,
     ...props
   }) => {
     return (
@@ -26,19 +28,33 @@ export const TextField = React.memo(
             {label} {required && <span className="text-red-500">*</span>}
           </label>
         )}
-        <input
-          type={type}
-          id={id}
-          name={name}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          className={`w-full px-4 py-3 rounded-lg border ${
-            error && touched ? 'border-red-500' : 'border-gray-300'
-          } focus:outline-none focus:ring-2 focus:ring-primary`}
-          required={required}
-          {...props}
-        />
+        <div className={`relative flex items-center ${error && touched ? 'has-error' : ''}`}>
+          {leftAddon && (
+            <div className="absolute left-0 pl-3 flex items-center pointer-events-none text-neutral-dark">
+              {leftAddon}
+            </div>
+          )}
+          <input
+            type={type}
+            id={id}
+            name={name}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            className={`w-full px-4 py-3 rounded-lg border ${
+              error && touched ? 'border-red-500' : 'border-gray-300'
+            } focus:outline-none focus:ring-2 focus:ring-primary ${leftAddon ? 'pl-8' : ''} ${
+              rightAddon ? 'pr-14' : ''
+            }`}
+            required={required}
+            {...props}
+          />
+          {rightAddon && (
+            <div className="absolute right-0 pr-3 flex items-center pointer-events-none text-neutral-dark">
+              {rightAddon}
+            </div>
+          )}
+        </div>
         {error && touched && <p className="text-red-500 text-sm mt-1">{error}</p>}
       </div>
     );
@@ -57,6 +73,8 @@ TextField.propTypes = {
   touched: PropTypes.bool,
   placeholder: PropTypes.string,
   className: PropTypes.string,
+  leftAddon: PropTypes.node,
+  rightAddon: PropTypes.node,
 };
 
 /**
