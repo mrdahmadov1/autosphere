@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { database, ref, get } from '../firebase/config';
 import { carsData } from '../data/cars'; // Keeping as fallback
+import PropTypes from 'prop-types';
 
 function CarDetails() {
   const { id } = useParams();
@@ -462,5 +463,20 @@ function SimilarCarCard({ car }) {
     </Link>
   );
 }
+
+SimilarCarCard.propTypes = {
+  car: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    imagePath: PropTypes.string,
+    image: PropTypes.string,
+    brand: PropTypes.string.isRequired,
+    model: PropTypes.string.isRequired,
+    year: PropTypes.number.isRequired,
+    price: PropTypes.number.isRequired,
+    mileage: PropTypes.number.isRequired,
+    transmission: PropTypes.string.isRequired,
+    fuel: PropTypes.string.isRequired,
+  }).isRequired,
+};
 
 export default CarDetails;

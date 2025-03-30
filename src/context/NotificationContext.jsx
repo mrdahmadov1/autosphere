@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
+import PropTypes from 'prop-types';
 
 // Generate unique IDs for notifications
 const generateId = () => `notification-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -133,6 +134,16 @@ export function NotificationProvider({ children }) {
     );
   };
 
+  Notification.propTypes = {
+    notification: PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      message: PropTypes.string.isRequired,
+      type: PropTypes.oneOf(Object.values(NOTIFICATION_TYPES)).isRequired,
+      duration: PropTypes.number.isRequired,
+      createdAt: PropTypes.number.isRequired,
+    }).isRequired,
+  };
+
   // Notifications container
   const NotificationsContainer = () => {
     if (notifications.length === 0) return null;
@@ -162,3 +173,7 @@ export function NotificationProvider({ children }) {
     </NotificationContext.Provider>
   );
 }
+
+NotificationProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { database, ref, get } from '../firebase/config';
 import { carsData } from '../data/cars'; // Keeping as fallback
+import PropTypes from 'prop-types';
 
 function Home() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -372,5 +373,13 @@ function CarImage({ car }) {
     </>
   );
 }
+
+CarImage.propTypes = {
+  car: PropTypes.shape({
+    imagePath: PropTypes.string,
+    brand: PropTypes.string.isRequired,
+    model: PropTypes.string.isRequired,
+  }).isRequired,
+};
 
 export default Home;

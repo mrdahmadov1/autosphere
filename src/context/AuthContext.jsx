@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -73,3 +74,7 @@ export function AuthProvider({ children }) {
 
   return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 }
+
+AuthProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};

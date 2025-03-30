@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Text input field with error handling
@@ -44,6 +45,20 @@ export const TextField = React.memo(
   }
 );
 
+TextField.propTypes = {
+  id: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
+  label: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onChange: PropTypes.func.isRequired,
+  type: PropTypes.string,
+  required: PropTypes.bool,
+  error: PropTypes.string,
+  touched: PropTypes.bool,
+  placeholder: PropTypes.string,
+  className: PropTypes.string,
+};
+
 /**
  * Textarea field with error handling
  */
@@ -87,6 +102,20 @@ export const TextArea = React.memo(
     );
   }
 );
+
+TextArea.propTypes = {
+  id: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
+  label: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onChange: PropTypes.func.isRequired,
+  required: PropTypes.bool,
+  error: PropTypes.string,
+  touched: PropTypes.bool,
+  rows: PropTypes.number,
+  placeholder: PropTypes.string,
+  className: PropTypes.string,
+};
 
 /**
  * Select dropdown with error handling
@@ -135,6 +164,24 @@ export const SelectField = React.memo(
   }
 );
 
+SelectField.propTypes = {
+  id: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
+  label: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onChange: PropTypes.func.isRequired,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      label: PropTypes.string.isRequired,
+    })
+  ),
+  required: PropTypes.bool,
+  error: PropTypes.string,
+  touched: PropTypes.bool,
+  className: PropTypes.string,
+};
+
 /**
  * File input field with error handling
  */
@@ -175,6 +222,19 @@ export const FileField = React.memo(
   }
 );
 
+FileField.propTypes = {
+  id: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
+  label: PropTypes.string,
+  onChange: PropTypes.func.isRequired,
+  accept: PropTypes.string,
+  required: PropTypes.bool,
+  error: PropTypes.string,
+  touched: PropTypes.bool,
+  helpText: PropTypes.string,
+  className: PropTypes.string,
+};
+
 /**
  * Form error alert component
  */
@@ -198,6 +258,12 @@ export const FormError = React.memo(({ error, onClose, className = '' }) => {
     </div>
   );
 });
+
+FormError.propTypes = {
+  error: PropTypes.string,
+  onClose: PropTypes.func,
+  className: PropTypes.string,
+};
 
 /**
  * Button component
@@ -254,6 +320,17 @@ export const Button = React.memo(
   }
 );
 
+Button.propTypes = {
+  type: PropTypes.string,
+  variant: PropTypes.oneOf(['primary', 'secondary', 'outline', 'danger']),
+  size: PropTypes.oneOf(['sm', 'md', 'lg']),
+  onClick: PropTypes.func,
+  disabled: PropTypes.bool,
+  isLoading: PropTypes.bool,
+  className: PropTypes.string,
+  children: PropTypes.node,
+};
+
 /**
  * Form group component for layout
  */
@@ -271,3 +348,10 @@ export const FormGroup = React.memo(({ columns = 1, gap = 6, className = '', chi
     <div className={`grid ${gridClasses[columns]} ${gapClasses} ${className}`}>{children}</div>
   );
 });
+
+FormGroup.propTypes = {
+  columns: PropTypes.oneOf([1, 2, 3, 4]),
+  gap: PropTypes.number,
+  className: PropTypes.string,
+  children: PropTypes.node,
+};
