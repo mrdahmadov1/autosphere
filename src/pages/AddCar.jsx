@@ -121,10 +121,8 @@ function AddCar() {
               : [''],
         });
 
-        // Set image preview if available
-        if (completeCarData.imagePath) {
-          setImagePreview(completeCarData.imagePath);
-        }
+        // DO NOT set imagePath as imagePreview - it's already set in fetchCompleteCarData
+        // The imagePreview variable already contains the base64 data
       }
     };
 
