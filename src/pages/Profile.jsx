@@ -3,13 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { useNotification } from '../context/NotificationContext';
 import { database, ref, get, remove, update } from '../firebase/config';
-
-// Default car image placeholder
-const DEFAULT_CAR_IMAGE = 'https://via.placeholder.com/400x300?text=Car+Image';
+import { getPlaceholder } from '../utils/imageUtils';
 
 // Memoized car card component to prevent unnecessary re-renders
 const CarCard = memo(({ car, onEdit, onDelete }) => {
-  const [imageUrl, setImageUrl] = useState(DEFAULT_CAR_IMAGE);
+  const [imageUrl, setImageUrl] = useState(getPlaceholder('car'));
   const [loading, setLoading] = useState(false);
 
   // Fetch image from the Realtime Database if we have a path
@@ -27,14 +25,14 @@ const CarCard = memo(({ car, onEdit, onDelete }) => {
               // Base64 data is stored in the 'data' field
               setImageUrl(imageData.data);
             } else {
-              setImageUrl(DEFAULT_CAR_IMAGE);
+              setImageUrl(getPlaceholder('car'));
             }
           } else {
-            setImageUrl(DEFAULT_CAR_IMAGE);
+            setImageUrl(getPlaceholder('car'));
           }
         } catch (err) {
           console.error('Error fetching car image:', err);
-          setImageUrl(DEFAULT_CAR_IMAGE);
+          setImageUrl(getPlaceholder('error'));
         } finally {
           setLoading(false);
         }
@@ -60,7 +58,7 @@ const CarCard = memo(({ car, onEdit, onDelete }) => {
             alt={`${car.brand} ${car.model}`}
             className="w-full h-full object-cover"
             loading="lazy"
-            onError={() => setImageUrl(DEFAULT_CAR_IMAGE)}
+            onError={() => setImageUrl(getPlaceholder('error'))}
           />
         )}
       </div>

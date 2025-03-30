@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { database, ref, get } from '../firebase/config';
 import { carsData } from '../data/cars'; // Keeping as fallback
 import PropTypes from 'prop-types';
+import { getPlaceholder } from '../utils/imageUtils';
 
 function Home() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -151,7 +152,7 @@ function Home() {
                       <CarImage car={car} />
                     ) : (
                       <img
-                        src={car.image || 'https://via.placeholder.com/400x300?text=No+Image'}
+                        src={car.image || getPlaceholder('car')}
                         alt={`${car.brand} ${car.model}`}
                         className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                       />
@@ -321,7 +322,7 @@ function Home() {
 
 // Component to handle loading car images from database
 function CarImage({ car }) {
-  const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/400x300?text=Loading...');
+  const [imageUrl, setImageUrl] = useState(getPlaceholder('loading'));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -336,19 +337,19 @@ function CarImage({ car }) {
             if (imageData && imageData.data) {
               setImageUrl(imageData.data);
             } else {
-              setImageUrl('https://via.placeholder.com/400x300?text=No+Image');
+              setImageUrl(getPlaceholder('default'));
             }
           } else {
-            setImageUrl('https://via.placeholder.com/400x300?text=No+Image');
+            setImageUrl(getPlaceholder('default'));
           }
         } catch (err) {
           console.error('Error loading image:', err);
-          setImageUrl('https://via.placeholder.com/400x300?text=Error');
+          setImageUrl(getPlaceholder('error'));
         } finally {
           setLoading(false);
         }
       } else {
-        setImageUrl('https://via.placeholder.com/400x300?text=No+Image');
+        setImageUrl(getPlaceholder('car'));
         setLoading(false);
       }
     };
@@ -367,7 +368,7 @@ function CarImage({ car }) {
           src={imageUrl}
           alt={`${car.brand} ${car.model}`}
           className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-          onError={() => setImageUrl('https://via.placeholder.com/400x300?text=Error')}
+          onError={() => setImageUrl(getPlaceholder('error'))}
         />
       )}
     </>
