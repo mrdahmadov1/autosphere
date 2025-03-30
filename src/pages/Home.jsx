@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { db } from '../firebase/config';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { database, ref, get } from '../firebase/config';
 import { carsData } from '../data/cars'; // Keeping as fallback
 
 function Home() {
@@ -15,20 +14,23 @@ function Home() {
   useEffect(() => {
     async function fetchCars() {
       try {
-        const carsQuery = query(collection(db, 'cars'), orderBy('createdAt', 'desc'));
-        const querySnapshot = await getDocs(carsQuery);
+        const carsRef = ref(database, 'cars');
+        const snapshot = await get(carsRef);
 
-        if (!querySnapshot.empty) {
-          const carsFromFirestore = querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-            // Convert Firebase timestamp to date
-            createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date(),
+        if (snapshot.exists()) {
+          const carsData = snapshot.val();
+          const carsArray = Object.keys(carsData).map((key) => ({
+            id: key,
+            ...carsData[key],
           }));
-          setAllCars(carsFromFirestore);
-          setFilteredCars(carsFromFirestore);
+
+          // Sort by createdAt timestamp (newest first)
+          const sortedCars = carsArray.sort((a, b) => b.createdAt - a.createdAt);
+
+          setAllCars(sortedCars);
+          setFilteredCars(sortedCars);
         } else {
-          // Fallback to static data if no cars in Firestore
+          // Fallback to static data if no cars in database
           setAllCars(carsData);
           setFilteredCars(carsData);
         }
@@ -144,11 +146,15 @@ function Home() {
               {filteredCars.map((car) => (
                 <div key={car.id} className="card group">
                   <div className="relative overflow-hidden h-60">
-                    <img
-                      src={car.image}
-                      alt={`${car.brand} ${car.model}`}
-                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                    />
+                    {car.imagePath ? (
+                      <CarImage car={car} />
+                    ) : (
+                      <img
+                        src={car.image || 'https://via.placeholder.com/400x300?text=No+Image'}
+                        alt={`${car.brand} ${car.model}`}
+                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                      />
+                    )}
                     <div className="absolute top-4 right-4 bg-accent text-neutral-dark font-bold py-1 px-3 rounded-full">
                       {car.year}
                     </div>
@@ -254,9 +260,10 @@ function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-3">Quality Assurance</h3>
+              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Quality Assurance</h3>
               <p className="text-neutral/70">
-                All our vehicles undergo a rigorous 150-point inspection for your peace of mind.
+                All our vehicles undergo rigorous inspection to ensure the highest quality
+                standards.
               </p>
             </div>
             <div className="text-center">
@@ -272,13 +279,13 @@ function Home() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                    d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-3">Flexible Financing</h3>
+              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Fair Prices</h3>
               <p className="text-neutral/70">
-                We offer competitive financing options tailored to your budget and needs.
+                Competitive pricing with no hidden fees. Get the best value for your money.
               </p>
             </div>
             <div className="text-center">
@@ -294,41 +301,75 @@ function Home() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-3">No Hidden Fees</h3>
+              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Fast & Easy</h3>
               <p className="text-neutral/70">
-                We believe in transparency. The price you see is the price you pay.
+                Simple and straightforward process to help you find and purchase your dream car
+                without hassle.
               </p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Call to Action */}
-      <section className="py-20 px-8 bg-primary text-white">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Find Your Perfect Car?</h2>
-          <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">
-            Our team of experts is ready to help you find the vehicle that perfectly matches your
-            needs and budget.
-          </p>
-          <div className="flex flex-col md:flex-row gap-4 justify-center">
-            <Link to="/contact" className="btn bg-white text-primary hover:bg-neutral-light">
-              Contact Us
-            </Link>
-            <Link
-              to="/about"
-              className="btn border-2 border-white text-white hover:bg-white hover:text-primary"
-            >
-              Learn More
-            </Link>
           </div>
         </div>
       </section>
     </div>
+  );
+}
+
+// Component to handle loading car images from database
+function CarImage({ car }) {
+  const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/400x300?text=Loading...');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      if (car.imagePath) {
+        try {
+          const imageRef = ref(database, car.imagePath);
+          const snapshot = await get(imageRef);
+
+          if (snapshot.exists()) {
+            const imageData = snapshot.val();
+            if (imageData && imageData.data) {
+              setImageUrl(imageData.data);
+            } else {
+              setImageUrl('https://via.placeholder.com/400x300?text=No+Image');
+            }
+          } else {
+            setImageUrl('https://via.placeholder.com/400x300?text=No+Image');
+          }
+        } catch (err) {
+          console.error('Error loading image:', err);
+          setImageUrl('https://via.placeholder.com/400x300?text=Error');
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setImageUrl('https://via.placeholder.com/400x300?text=No+Image');
+        setLoading(false);
+      }
+    };
+
+    loadImage();
+  }, [car.imagePath]);
+
+  return (
+    <>
+      {loading ? (
+        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      ) : (
+        <img
+          src={imageUrl}
+          alt={`${car.brand} ${car.model}`}
+          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+          onError={() => setImageUrl('https://via.placeholder.com/400x300?text=Error')}
+        />
+      )}
+    </>
   );
 }
 

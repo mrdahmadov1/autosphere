@@ -2,9 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { useNotification } from '../context/NotificationContext';
-import { db, database } from '../firebase/config';
-import { collection, addDoc, updateDoc, arrayUnion, doc, getDoc } from 'firebase/firestore';
-import { ref, set, get, remove } from 'firebase/database';
+import { database, ref, set, get, remove, push, update } from '../firebase/config';
 import { processImageForUpload } from '../utils/imageUtils';
 import { validateCarForm, hasErrors } from '../utils/validationUtils';
 import {
@@ -50,21 +48,21 @@ function AddCar() {
       if (!carData.id) return carData;
 
       try {
-        // Fetch complete car document from Firestore
-        const carRef = doc(db, 'cars', carData.id);
-        const carSnap = await getDoc(carRef);
+        // Fetch complete car document from Realtime Database
+        const carRef = ref(database, `cars/${carData.id}`);
+        const snapshot = await get(carRef);
 
-        if (carSnap.exists()) {
-          const completeData = carSnap.data();
+        if (snapshot.exists()) {
+          const completeData = snapshot.val();
 
           // If we have an imagePath, fetch the image from the database
           if (completeData.imagePath) {
             try {
               const imageRef = ref(database, completeData.imagePath);
-              const snapshot = await get(imageRef);
+              const imageSnapshot = await get(imageRef);
 
-              if (snapshot.exists()) {
-                const imageData = snapshot.val();
+              if (imageSnapshot.exists()) {
+                const imageData = imageSnapshot.val();
                 if (imageData && imageData.data) {
                   // Use the base64 data directly for the preview
                   setImagePreview(imageData.data);
@@ -78,7 +76,7 @@ function AddCar() {
             setImagePreview(completeData.image);
           }
 
-          // Return full car data from Firestore
+          // Return full car data
           return {
             id: carData.id,
             ...completeData,
@@ -313,14 +311,14 @@ function AddCar() {
         }
 
         // Update car with imagePath
-        const carRef = doc(db, 'cars', carId);
+        const carRef = ref(database, `cars/${carId}`);
 
         // Add timestamp and imagePath to car data
-        carData.updatedAt = new Date();
+        carData.updatedAt = Date.now();
         carData.imagePath = imagePath;
 
-        // Update the car document
-        await updateDoc(carRef, carData);
+        // Update the car in Realtime Database
+        await update(carRef, carData);
 
         // Create updated car summary for user's array
         const carSummary = {
@@ -336,46 +334,46 @@ function AddCar() {
           imagePath: imagePath,
         };
 
-        // Get current user document
-        const userRef = doc(db, 'users', currentUser.uid);
-        const userDoc = await getDoc(userRef);
+        // Get current user data
+        const userRef = ref(database, `users/${currentUser.uid}`);
+        const userSnapshot = await get(userRef);
 
-        if (userDoc.exists()) {
-          // Get current cars array
-          const userData = userDoc.data();
-          const currentCars = userData.cars || [];
+        if (userSnapshot.exists()) {
+          // Get current cars object
+          const userData = userSnapshot.val();
+          const userCars = userData.cars || {};
 
-          // Remove the old car by filtering out the one with the same ID
-          const updatedCars = currentCars.filter((car) => car.id !== carId);
+          // Update the car in the user's cars object
+          userCars[carId] = carSummary;
 
-          // Add the updated car
-          updatedCars.push(carSummary);
-
-          // Update the user document with the new cars array
-          await updateDoc(userRef, { cars: updatedCars });
+          // Update the user document with the updated cars
+          await update(userRef, { cars: userCars });
 
           // Show success notification
           success(`Successfully updated ${formData.brand} ${formData.model}`);
         } else {
-          throw new Error('User document not found');
+          showError('Could not find user data. Please try again.');
         }
       } else {
-        // For new cars, add timestamp
-        carData.createdAt = new Date();
+        // Adding a new car
+        // Generate a new car ID
+        const carsRef = ref(database, 'cars');
+        const newCarRef = push(carsRef);
+        carId = newCarRef.key;
 
-        // Create car document without image path first
-        const carRef = await addDoc(collection(db, 'cars'), carData);
-        carId = carRef.id;
+        // Add timestamp
+        carData.createdAt = Date.now();
 
-        // Upload image if we have one
+        // Upload image if provided
         if (image) {
           imagePath = await uploadImageToDatabase(image, carId);
-
-          // Update the car document with the image path
-          await updateDoc(carRef, { imagePath });
+          carData.imagePath = imagePath;
         }
 
-        // Create car summary for user's profile
+        // Save car data to database
+        await set(newCarRef, carData);
+
+        // Create car summary for user's cars
         const carSummary = {
           id: carId,
           brand: formData.brand,
@@ -389,149 +387,144 @@ function AddCar() {
           imagePath: imagePath,
         };
 
-        // Add car to user's profile
-        const userRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userRef, {
-          cars: arrayUnion(carSummary),
-        });
+        // Add the car to user's cars in Realtime Database
+        const userRef = ref(database, `users/${currentUser.uid}`);
+        const userSnapshot = await get(userRef);
 
-        // Show success notification
+        if (userSnapshot.exists()) {
+          const userData = userSnapshot.val();
+          const userCars = userData.cars || {};
+
+          // Add new car to user's cars
+          userCars[carId] = carSummary;
+
+          // Update user data
+          await update(userRef, { cars: userCars });
+        } else {
+          // If user document doesn't exist, create it
+          await set(userRef, {
+            name: currentUser.displayName || '',
+            email: currentUser.email || '',
+            createdAt: Date.now(),
+            cars: { [carId]: carSummary },
+          });
+        }
+
+        // Show success message
         success(`Successfully added ${formData.brand} ${formData.model}`);
       }
 
+      // Redirect back to profile page
       navigate('/profile');
-    } catch (error) {
-      showError(`Failed to ${isEditMode ? 'update' : 'add'} car listing: ${error.message}`);
-      console.error(error);
+    } catch (err) {
+      console.error('Error saving car:', err);
+      showError(err.message || 'Error saving car. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Fuel type options for select
+  // Form elements configuration
+  const transmissionOptions = useMemo(
+    () => [
+      { value: 'Automatic', label: 'Automatic' },
+      { value: 'Manual', label: 'Manual' },
+      { value: 'Semi-Automatic', label: 'Semi-Automatic' },
+      { value: 'CVT', label: 'CVT' },
+    ],
+    []
+  );
+
   const fuelOptions = useMemo(
     () => [
       { value: 'Gasoline', label: 'Gasoline' },
       { value: 'Diesel', label: 'Diesel' },
       { value: 'Electric', label: 'Electric' },
       { value: 'Hybrid', label: 'Hybrid' },
+      { value: 'Plugin Hybrid', label: 'Plugin Hybrid' },
+      { value: 'CNG', label: 'CNG' },
+      { value: 'LPG', label: 'LPG' },
     ],
     []
   );
 
-  // Transmission options for select
-  const transmissionOptions = useMemo(
-    () => [
-      { value: 'Automatic', label: 'Automatic' },
-      { value: 'Manual', label: 'Manual' },
-    ],
-    []
-  );
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!currentUser) {
-      navigate('/login');
-    }
-  }, [currentUser, navigate]);
-
-  if (!currentUser) return null;
+  // Flag to check if form has been touched
+  const hasBeenTouched = useMemo(() => Object.keys(formTouched).length > 0, [formTouched]);
 
   return (
-    <div className="max-w-4xl mx-auto my-12 px-4">
-      <div className="bg-white rounded-xl shadow-card p-8">
-        <h1 className="text-3xl font-bold text-neutral-dark mb-6">
-          {isEditMode ? 'Edit Car Listing' : 'Add New Car Listing'}
-        </h1>
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <h1 className="text-3xl font-bold mb-6">{isEditMode ? 'Edit Car' : 'Add New Car'}</h1>
 
-        <FormError
-          error={errors.form}
-          onClose={() => setErrors((prev) => ({ ...prev, form: undefined }))}
-          className="mb-6"
-        />
-
-        <form onSubmit={handleSubmit} noValidate>
-          <FormGroup columns={2} className="mb-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormGroup label="Brand" error={formTouched.brand && errors.brand}>
             <TextField
-              id="brand"
               name="brand"
-              label="Brand"
               value={formData.brand}
               onChange={handleChange}
-              error={errors.brand}
-              touched={formTouched.brand}
+              placeholder="e.g. Toyota"
               required
             />
+          </FormGroup>
 
+          <FormGroup label="Model" error={formTouched.model && errors.model}>
             <TextField
-              id="model"
               name="model"
-              label="Model"
               value={formData.model}
               onChange={handleChange}
-              error={errors.model}
-              touched={formTouched.model}
+              placeholder="e.g. Camry"
               required
             />
+          </FormGroup>
 
+          <FormGroup label="Year" error={formTouched.year && errors.year}>
             <TextField
-              id="year"
               name="year"
-              label="Year"
+              type="text"
               value={formData.year}
               onChange={handleChange}
-              error={errors.year}
-              touched={formTouched.year}
+              placeholder="e.g. 2022"
               required
             />
+          </FormGroup>
 
+          <FormGroup label="Price" error={formTouched.price && errors.price}>
             <TextField
-              id="price"
               name="price"
-              label="Price ($)"
+              type="text"
               value={formData.price}
               onChange={handleChange}
-              error={errors.price}
-              touched={formTouched.price}
+              placeholder="e.g. 25000"
               required
+              leftAddon="$"
             />
+          </FormGroup>
 
+          <FormGroup label="Mileage" error={formTouched.mileage && errors.mileage}>
             <TextField
-              id="mileage"
               name="mileage"
-              label="Mileage"
+              type="text"
               value={formData.mileage}
               onChange={handleChange}
-              error={errors.mileage}
-              touched={formTouched.mileage}
+              placeholder="e.g. 15000"
               required
+              rightAddon="miles"
             />
+          </FormGroup>
 
+          <FormGroup label="Color" error={formTouched.color && errors.color}>
             <TextField
-              id="color"
               name="color"
-              label="Color"
               value={formData.color}
               onChange={handleChange}
-              error={errors.color}
-              touched={formTouched.color}
+              placeholder="e.g. Silver"
               required
             />
+          </FormGroup>
 
+          <FormGroup label="Transmission" error={formTouched.transmission && errors.transmission}>
             <SelectField
-              id="fuel"
-              name="fuel"
-              label="Fuel Type"
-              value={formData.fuel}
-              onChange={handleChange}
-              options={fuelOptions}
-              required
-            />
-
-            <SelectField
-              id="transmission"
               name="transmission"
-              label="Transmission"
               value={formData.transmission}
               onChange={handleChange}
               options={transmissionOptions}
@@ -539,128 +532,116 @@ function AddCar() {
             />
           </FormGroup>
 
+          <FormGroup label="Fuel Type" error={formTouched.fuel && errors.fuel}>
+            <SelectField
+              name="fuel"
+              value={formData.fuel}
+              onChange={handleChange}
+              options={fuelOptions}
+              required
+            />
+          </FormGroup>
+        </div>
+
+        <FormGroup label="Car Image" error={formTouched.image && errors.image}>
+          <FileField
+            name="image"
+            onChange={handleImageChange}
+            accept="image/jpeg, image/png, image/webp"
+          />
+          {imagePreview && (
+            <div className="mt-2">
+              <p className="text-sm text-gray-600 mb-2">Preview:</p>
+              <img
+                src={imagePreview}
+                alt="Car preview"
+                className="w-full max-w-md h-auto rounded-lg border border-gray-300"
+              />
+            </div>
+          )}
+        </FormGroup>
+
+        <FormGroup label="Description" error={formTouched.description && errors.description}>
           <TextArea
-            id="description"
             name="description"
-            label="Description"
             value={formData.description}
             onChange={handleChange}
-            error={errors.description}
-            touched={formTouched.description}
+            placeholder="Tell us about your car"
             rows={4}
-            className="mb-6"
             required
           />
+        </FormGroup>
 
-          <div className="mb-6">
-            <label className="block text-neutral-dark mb-2">Features</label>
-            {formData.features.map((feature, index) => (
-              <div key={index} className="flex mb-2">
-                <input
-                  type="text"
-                  value={feature}
-                  onChange={(e) => handleFeatureChange(index, e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="E.g., Bluetooth, Navigation, etc."
-                />
-                {formData.features.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeFeatureField(index)}
-                    className="ml-2 px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={addFeatureField}
-              className="mt-2 text-primary hover:text-primary-dark flex items-center transition-colors"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Features</label>
+          {formData.features.map((feature, index) => (
+            <div key={index} className="flex items-center mb-2">
+              <TextField
+                value={feature}
+                onChange={(e) => handleFeatureChange(index, e.target.value)}
+                placeholder={`Feature ${index + 1}`}
+                className="flex-grow"
+              />
+              <button
+                type="button"
+                onClick={() => removeFeatureField(index)}
+                className="ml-2 p-2 text-red-500 hover:text-red-700"
+                disabled={formData.features.length === 1}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Add Feature
-            </button>
-          </div>
-
-          <div className="mb-8">
-            <FileField
-              id="image"
-              name="image"
-              label="Car Image"
-              onChange={handleImageChange}
-              accept="image/jpeg,image/png,image/webp"
-              error={errors.image}
-              touched={formTouched.image}
-              helpText="Maximum size: 2MB. Formats: JPEG, PNG, WebP."
-              required={!isEditMode}
-            />
-
-            {imagePreview && (
-              <div className="relative mt-4">
-                <img
-                  src={imagePreview}
-                  alt="Car preview"
-                  className="w-full max-h-64 object-contain rounded-lg"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setImagePreview('');
-                    setImage(null);
-                    setFormTouched((prev) => ({ ...prev, image: true }));
-                  }}
-                  className="absolute top-2 right-2 bg-red-100 text-red-600 p-2 rounded-full hover:bg-red-200 transition-colors"
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="flex justify-end mt-8">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/profile')}
-              className="mr-4"
-              disabled={loading}
+                  <path
+                    fillRule="evenodd"
+                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addFeatureField}
+            className="inline-flex items-center text-blue-600 hover:text-blue-800"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
             >
-              Cancel
-            </Button>
+              <path
+                fillRule="evenodd"
+                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Add Feature
+          </button>
+        </div>
 
-            <Button type="submit" variant="primary" isLoading={loading}>
-              {isEditMode ? 'Update Car' : 'Add Car'}
-            </Button>
-          </div>
-        </form>
-      </div>
+        {hasBeenTouched && hasErrors(errors) && (
+          <FormError message="Please fix the errors in the form before submitting." />
+        )}
+
+        <div className="flex justify-between">
+          <Button
+            type="button"
+            onClick={() => navigate('/profile')}
+            variant="outline"
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Saving...' : isEditMode ? 'Update Car' : 'Add Car'}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

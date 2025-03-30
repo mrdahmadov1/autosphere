@@ -1,10 +1,8 @@
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, memo, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { useNotification } from '../context/NotificationContext';
-import { db, database } from '../firebase/config';
-import { doc, updateDoc, arrayRemove, deleteDoc } from 'firebase/firestore';
-import { ref, get, remove } from 'firebase/database';
+import { database, ref, get, remove, update } from '../firebase/config';
 
 // Default car image placeholder
 const DEFAULT_CAR_IMAGE = 'https://via.placeholder.com/400x300?text=Car+Image';
@@ -183,185 +181,184 @@ function Profile() {
         }
       }
 
-      // Remove the car from the user's cars array
-      const userRef = doc(db, 'users', currentUser.uid);
-      await updateDoc(userRef, {
-        cars: arrayRemove(carToDelete),
-      });
+      // Remove the car from the user's cars object in Realtime Database
+      const userRef = ref(database, `users/${currentUser.uid}`);
+      const userSnapshot = await get(userRef);
+
+      if (userSnapshot.exists()) {
+        const userData = userSnapshot.val();
+        const userCars = userData.cars || {};
+
+        // Remove the car by its ID
+        if (userCars[carToDelete.id]) {
+          delete userCars[carToDelete.id];
+
+          // Update the user data with the updated cars object
+          await update(userRef, { cars: userCars });
+        }
+      }
 
       // Delete the car document if it exists
       if (carToDelete.id) {
-        const carRef = doc(db, 'cars', carToDelete.id);
-        await deleteDoc(carRef);
+        const carRef = ref(database, `cars/${carToDelete.id}`);
+        await remove(carRef);
       }
 
       // Refresh user data
       await fetchUserData();
 
-      // Show success message
-      success(`Successfully deleted ${carToDelete.brand} ${carToDelete.model}`);
-
-      // Reset state
+      // Show success message and reset the delete state
+      success('Car successfully deleted.');
       setShowDeleteConfirm(false);
       setCarToDelete(null);
     } catch (err) {
-      setErrorMessage('Failed to delete car. Please try again.');
-      error('Failed to delete car. Please try again.');
+      setErrorMessage('Failed to delete car.');
+      error('Failed to delete car: ' + err.message);
       console.error(err);
     } finally {
       setIsDeleting(false);
     }
   }, [carToDelete, currentUser, fetchUserData, success, error]);
 
-  // Function to cancel delete operation
-  const cancelDelete = useCallback(() => {
+  // Cancel delete action
+  const cancelDeleteCar = useCallback(() => {
     setShowDeleteConfirm(false);
     setCarToDelete(null);
   }, []);
 
-  if (loading && !userData) {
-    return (
-      <div className="max-w-4xl mx-auto my-12 px-4 text-center">
-        <div className="w-8 h-8 border-t-2 border-primary border-solid rounded-full animate-spin mx-auto mb-4"></div>
-        <p>Loading profile...</p>
-      </div>
-    );
-  }
+  // Convert cars object to array for rendering
+  const carsArray = useMemo(() => {
+    if (!userData || !userData.cars) return [];
+    return Object.values(userData.cars);
+  }, [userData]);
 
   return (
-    <div className="max-w-4xl mx-auto my-12 px-4">
-      <div className="bg-white rounded-xl shadow-card p-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-          <h1 className="text-3xl font-bold text-neutral-dark mb-4 md:mb-0">My Profile</h1>
-          <button
-            onClick={handleLogout}
-            className="btn-outline px-6 py-2 transition-colors"
-            disabled={isDeleting}
-          >
-            Log Out
-          </button>
-        </div>
-
-        {errorMessage && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 flex justify-between items-center">
-            <span>{errorMessage}</span>
-            <button
-              onClick={() => setErrorMessage('')}
-              className="text-red-700 hover:text-red-900 focus:outline-none"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-
-        {userData && (
-          <div>
-            <div className="mb-8">
-              <h2 className="text-xl font-bold text-neutral-dark mb-4">Account Information</h2>
-              <div className="bg-neutral-light p-6 rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-neutral/70 text-sm mb-1">Name</p>
-                    <p className="font-medium">{currentUser.displayName}</p>
-                  </div>
-                  <div>
-                    <p className="text-neutral/70 text-sm mb-1">Email</p>
-                    <p className="font-medium">{currentUser.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-neutral/70 text-sm mb-1">Account Created</p>
-                    <p className="font-medium">
-                      {userData.createdAt
-                        ? new Date(userData.createdAt.toDate()).toLocaleDateString()
-                        : 'N/A'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-neutral-dark">My Car Listings</h2>
-                <button
-                  onClick={() => navigate('/add-car')}
-                  className="btn-primary px-4 py-2 text-sm flex items-center transition-colors"
-                  disabled={isDeleting}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Add New Car
-                </button>
-              </div>
-
-              {userData.cars && userData.cars.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {userData.cars.map((car) => (
-                    <CarCard
-                      key={car.id || `${car.brand}-${car.model}-${car.year}`}
-                      car={car}
-                      onEdit={handleEditCar}
-                      onDelete={initiateDeleteCar}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-neutral-light p-8 rounded-lg text-center">
-                  <p className="text-neutral/70 mb-4">You haven't posted any car listings yet.</p>
-                  <button
-                    onClick={() => navigate('/add-car')}
-                    className="btn-primary px-6 py-2 transition-colors"
-                    disabled={isDeleting}
-                  >
-                    Post Your First Car
-                  </button>
-                </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col md:flex-row justify-between items-start mb-8">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Your Profile</h1>
+          {userData && (
+            <div className="mb-4">
+              <p className="text-lg">
+                <span className="font-medium">Name:</span> {userData.name}
+              </p>
+              <p className="text-lg">
+                <span className="font-medium">Email:</span> {userData.email}
+              </p>
+              {userData.phone && (
+                <p className="text-lg">
+                  <span className="font-medium">Phone:</span> {userData.phone}
+                </p>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+        <div className="flex flex-col space-y-2 mt-4 md:mt-0">
+          <button
+            onClick={() => navigate('/add-car')}
+            className="bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded-lg transition-colors"
+          >
+            Add New Car
+          </button>
+          <button
+            onClick={handleLogout}
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg transition-colors"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
 
-        {/* Delete confirmation modal */}
-        {showDeleteConfirm && carToDelete && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl p-6 max-w-md w-full">
-              <h3 className="text-xl font-bold mb-4">Confirm Deletion</h3>
-              <p className="mb-6">
-                Are you sure you want to delete {carToDelete.brand} {carToDelete.model} (
-                {carToDelete.year})? This action cannot be undone.
-              </p>
-              <div className="flex justify-end space-x-4">
-                <button
-                  onClick={cancelDelete}
-                  className="btn-outline px-4 py-2"
-                  disabled={isDeleting}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDeleteCar}
-                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
-                </button>
-              </div>
+      {errorMessage && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
+          <span className="block sm:inline">{errorMessage}</span>
+          <button
+            className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            onClick={() => setErrorMessage('')}
+          >
+            <span className="text-xl">&times;</span>
+          </button>
+        </div>
+      )}
+
+      <h2 className="text-2xl font-bold mb-6">Your Cars</h2>
+
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="w-12 h-12 border-t-4 border-primary border-solid rounded-full animate-spin"></div>
+        </div>
+      ) : carsArray.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {carsArray.map((car) => (
+            <CarCard key={car.id} car={car} onEdit={handleEditCar} onDelete={initiateDeleteCar} />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-blue-50 text-blue-800 p-6 rounded-lg">
+          <p className="text-lg mb-4">You don't have any cars listed yet.</p>
+          <button
+            onClick={() => navigate('/add-car')}
+            className="bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded-lg transition-colors"
+          >
+            Add Your First Car
+          </button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Confirm Deletion</h3>
+            <p className="mb-6">
+              Are you sure you want to delete {carToDelete?.brand} {carToDelete?.model} (
+              {carToDelete?.year})? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={cancelDeleteCar}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteCar}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

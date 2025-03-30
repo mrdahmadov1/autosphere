@@ -6,8 +6,7 @@ import {
   onAuthStateChanged,
   updateProfile,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../firebase/config';
+import { auth, database, ref, set, get } from '../firebase/config';
 
 export const AuthContext = createContext();
 
@@ -23,12 +22,12 @@ export function AuthProvider({ children }) {
       displayName: name,
     });
 
-    // Create user document in Firestore
-    await setDoc(doc(db, 'users', userCredential.user.uid), {
+    // Create user document in Realtime Database
+    await set(ref(database, `users/${userCredential.user.uid}`), {
       name,
       email,
-      createdAt: new Date(),
-      cars: [],
+      createdAt: Date.now(),
+      cars: {},
     });
 
     return userCredential.user;
@@ -45,11 +44,11 @@ export function AuthProvider({ children }) {
   async function getUserProfile() {
     if (!currentUser) return null;
 
-    const docRef = doc(db, 'users', currentUser.uid);
-    const docSnap = await getDoc(docRef);
+    const userRef = ref(database, `users/${currentUser.uid}`);
+    const snapshot = await get(userRef);
 
-    if (docSnap.exists()) {
-      return docSnap.data();
+    if (snapshot.exists()) {
+      return snapshot.val();
     } else {
       return null;
     }

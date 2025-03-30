@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { db } from '../firebase/config';
-import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { database, ref, get } from '../firebase/config';
 import { carsData } from '../data/cars'; // Keeping as fallback
 
 function CarDetails() {
@@ -10,42 +9,68 @@ function CarDetails() {
   const [similarCars, setSimilarCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [carImage, setCarImage] = useState(null);
 
   useEffect(() => {
     async function fetchCarData() {
       try {
-        // First try to fetch from Firestore
-        const carDocRef = doc(db, 'cars', id);
-        const carDoc = await getDoc(carDocRef);
+        // First try to fetch from Realtime Database
+        const carRef = ref(database, `cars/${id}`);
+        const snapshot = await get(carRef);
 
         let carData;
 
-        if (carDoc.exists()) {
+        if (snapshot.exists()) {
           carData = {
-            id: carDoc.id,
-            ...carDoc.data(),
-            createdAt: carDoc.data().createdAt ? carDoc.data().createdAt.toDate() : new Date(),
+            id,
+            ...snapshot.val(),
           };
           setCar(carData);
 
-          // Fetch similar cars
-          if (carData) {
-            const similarCarsQuery = query(
-              collection(db, 'cars'),
-              where('brand', '==', carData.brand),
-              where('id', '!=', id),
-              limit(3)
-            );
+          // Fetch car image if there's an imagePath
+          if (carData.imagePath) {
+            try {
+              const imageRef = ref(database, carData.imagePath);
+              const imageSnapshot = await get(imageRef);
 
-            const similarCarsSnapshot = await getDocs(similarCarsQuery);
+              if (imageSnapshot.exists()) {
+                const imageData = imageSnapshot.val();
+                if (imageData && imageData.data) {
+                  setCarImage(imageData.data);
+                }
+              }
+            } catch (imageError) {
+              console.error('Error fetching car image:', imageError);
+            }
+          }
 
-            if (!similarCarsSnapshot.empty) {
-              const similarCarsData = similarCarsSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-              }));
-              setSimilarCars(similarCarsData);
-            } else {
+          // Fetch similar cars (cars with the same brand)
+          if (carData.brand) {
+            try {
+              const carsRef = ref(database, 'cars');
+              const carsSnapshot = await get(carsRef);
+
+              if (carsSnapshot.exists()) {
+                const carsData = carsSnapshot.val();
+                const similarCarsArray = Object.keys(carsData)
+                  .filter((key) => key !== id && carsData[key].brand === carData.brand)
+                  .map((key) => ({
+                    id: key,
+                    ...carsData[key],
+                  }))
+                  .slice(0, 3);
+
+                setSimilarCars(similarCarsArray);
+              } else {
+                // Fallback to static data for similar cars
+                const staticSimilarCars = carsData
+                  .filter((c) => c.id !== parseInt(id) && c.brand === carData.brand)
+                  .slice(0, 3);
+                setSimilarCars(staticSimilarCars);
+              }
+            } catch (similarError) {
+              console.error('Error fetching similar cars:', similarError);
+
               // Fallback to static data for similar cars
               const staticSimilarCars = carsData
                 .filter((c) => c.id !== parseInt(id) && c.brand === carData.brand)
@@ -198,173 +223,243 @@ function CarDetails() {
                 {car.transmission}
               </span>
             </div>
-            <p className="text-3xl md:text-4xl font-bold text-accent">
-              ${car.price.toLocaleString()}
-            </p>
+            <p className="text-3xl font-bold text-primary mb-8">${car.price.toLocaleString()}</p>
           </div>
         </div>
       </section>
 
-      {/* Car Details */}
-      <section className="py-16 px-8 bg-white">
+      {/* Car Details Section */}
+      <section className="py-16 px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
-            {/* Left Column - Image */}
+            {/* Main Content */}
             <div className="lg:col-span-3">
-              <div className="bg-neutral-light p-1 rounded-xl shadow-card mb-8">
-                <img
-                  src={car.image}
-                  alt={`${car.brand} ${car.model}`}
-                  className="w-full rounded-lg object-cover h-[400px] md:h-[500px]"
-                />
-              </div>
+              <div className="bg-white rounded-xl shadow-card overflow-hidden mb-10">
+                <div className="relative aspect-[16/9]">
+                  <img
+                    src={
+                      carImage || car.image || 'https://via.placeholder.com/1200x800?text=No+Image'
+                    }
+                    alt={`${car.brand} ${car.model}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="p-8">
+                  <h2 className="text-2xl font-bold mb-6 text-neutral-dark">Description</h2>
+                  <p className="text-neutral-dark/80 mb-8 whitespace-pre-line">
+                    {car.description ||
+                      `Experience the power and elegance of this ${car.year} ${car.brand} ${car.model}. This vehicle combines superior performance with luxurious comfort, making every drive unforgettable.`}
+                  </p>
 
-              <div className="bg-white rounded-xl shadow-card p-8 mb-8">
-                <h2 className="text-2xl font-bold mb-4 text-neutral-dark">Description</h2>
-                <p className="text-neutral/80 mb-6">{car.description}</p>
-                <h3 className="text-xl font-bold mb-4 text-neutral-dark">Features</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {car.features.map((feature, index) => (
-                    <div key={index} className="flex items-center">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 text-primary mr-2"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <span>{feature}</span>
+                  {car.features && car.features.length > 0 && (
+                    <>
+                      <h3 className="text-xl font-bold mb-4 text-neutral-dark">Key Features</h3>
+                      <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                        {car.features.map((feature, index) => (
+                          <li key={index} className="flex items-center text-neutral-dark/80">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5 text-primary mr-2 flex-shrink-0"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+
+                  <div className="border-t border-gray-200 pt-6">
+                    <h3 className="text-xl font-bold mb-4 text-neutral-dark">Vehicle Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-neutral/70 mb-1">Brand</p>
+                        <p className="font-medium">{car.brand}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-neutral/70 mb-1">Model</p>
+                        <p className="font-medium">{car.model}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-neutral/70 mb-1">Year</p>
+                        <p className="font-medium">{car.year}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-neutral/70 mb-1">Mileage</p>
+                        <p className="font-medium">{car.mileage} miles</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-neutral/70 mb-1">Fuel Type</p>
+                        <p className="font-medium">{car.fuel}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-neutral/70 mb-1">Transmission</p>
+                        <p className="font-medium">{car.transmission}</p>
+                      </div>
+                      {car.color && (
+                        <div>
+                          <p className="text-sm text-neutral/70 mb-1">Color</p>
+                          <p className="font-medium">{car.color}</p>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Details and Contact Form */}
+            {/* Sidebar */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-xl shadow-card p-8 mb-8 sticky top-8">
-                <h2 className="text-2xl font-bold mb-6 text-neutral-dark">Vehicle Details</h2>
-                <div className="space-y-4 mb-8">
-                  <div className="flex justify-between py-3 border-b border-gray-100">
-                    <span className="text-neutral-dark font-medium">Brand</span>
-                    <span className="font-bold text-neutral">{car.brand}</span>
+                <h3 className="text-xl font-bold mb-6 text-neutral-dark">Contact Seller</h3>
+                <form className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-dark mb-1">
+                      Your Name
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="John Doe"
+                    />
                   </div>
-                  <div className="flex justify-between py-3 border-b border-gray-100">
-                    <span className="text-neutral-dark font-medium">Model</span>
-                    <span className="font-bold text-neutral">{car.model}</span>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-dark mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="john@example.com"
+                    />
                   </div>
-                  <div className="flex justify-between py-3 border-b border-gray-100">
-                    <span className="text-neutral-dark font-medium">Year</span>
-                    <span className="font-bold text-neutral">{car.year}</span>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-dark mb-1">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="(123) 456-7890"
+                    />
                   </div>
-                  <div className="flex justify-between py-3 border-b border-gray-100">
-                    <span className="text-neutral-dark font-medium">Color</span>
-                    <span className="font-bold text-neutral">{car.color}</span>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-dark mb-1">
+                      Message
+                    </label>
+                    <textarea
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
+                      rows="4"
+                      placeholder="I'm interested in this car and would like more information."
+                    ></textarea>
                   </div>
-                  <div className="flex justify-between py-3 border-b border-gray-100">
-                    <span className="text-neutral-dark font-medium">Mileage</span>
-                    <span className="font-bold text-neutral">{car.mileage} miles</span>
-                  </div>
-                  <div className="flex justify-between py-3 border-b border-gray-100">
-                    <span className="text-neutral-dark font-medium">Fuel Type</span>
-                    <span className="font-bold text-neutral">{car.fuel}</span>
-                  </div>
-                  <div className="flex justify-between py-3 border-b border-gray-100">
-                    <span className="text-neutral-dark font-medium">Transmission</span>
-                    <span className="font-bold text-neutral">{car.transmission}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <button className="btn-primary w-full flex items-center justify-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 mr-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                      />
-                    </svg>
-                    Call Dealer
-                  </button>
-                  <Link
-                    to="/contact"
-                    className="btn-outline w-full flex items-center justify-center"
+                  <button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary-dark text-white py-3 px-6 rounded-lg transition-colors"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 mr-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                      />
-                    </svg>
-                    Message Dealer
-                  </Link>
-                </div>
+                    Send Message
+                  </button>
+                </form>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Similar Cars */}
-      <section className="py-16 px-8 bg-neutral-light">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold mb-10 text-neutral-dark">Similar Vehicles</h2>
-          {similarCars.length > 0 ? (
+      {/* Similar Cars Section */}
+      {similarCars.length > 0 && (
+        <section className="py-16 px-8 bg-neutral-light">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-3xl font-bold mb-10 text-neutral-dark">Similar Cars</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {similarCars.map((similarCar) => (
-                <div key={similarCar.id} className="card group">
-                  <div className="relative overflow-hidden h-48">
-                    <img
-                      src={similarCar.image}
-                      alt={`${similarCar.brand} ${similarCar.model}`}
-                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold mb-2 text-neutral-dark">
-                      {similarCar.brand} {similarCar.model}
-                    </h3>
-                    <div className="flex justify-between items-end">
-                      <span className="text-xl font-bold text-primary">
-                        ${similarCar.price.toLocaleString()}
-                      </span>
-                      <Link
-                        to={`/cars/${similarCar.id}`}
-                        className="text-sm text-accent hover:underline"
-                      >
-                        View Details
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                <SimilarCarCard key={similarCar.id} car={similarCar} />
               ))}
             </div>
-          ) : (
-            <p className="text-center text-neutral/70">No similar vehicles found.</p>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
     </div>
+  );
+}
+
+// Component for displaying similar cars with image handling
+function SimilarCarCard({ car }) {
+  const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/400x300?text=Loading...');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      if (car.imagePath) {
+        try {
+          const imageRef = ref(database, car.imagePath);
+          const snapshot = await get(imageRef);
+
+          if (snapshot.exists()) {
+            const imageData = snapshot.val();
+            if (imageData && imageData.data) {
+              setImageUrl(imageData.data);
+            } else {
+              setImageUrl('https://via.placeholder.com/400x300?text=No+Image');
+            }
+          } else {
+            setImageUrl('https://via.placeholder.com/400x300?text=No+Image');
+          }
+        } catch (err) {
+          console.error('Error loading image:', err);
+          setImageUrl('https://via.placeholder.com/400x300?text=Error');
+        } finally {
+          setLoading(false);
+        }
+      } else if (car.image) {
+        setImageUrl(car.image);
+        setLoading(false);
+      } else {
+        setImageUrl('https://via.placeholder.com/400x300?text=No+Image');
+        setLoading(false);
+      }
+    };
+
+    loadImage();
+  }, [car]);
+
+  return (
+    <Link to={`/cars/${car.id}`} className="card group">
+      <div className="relative overflow-hidden h-48">
+        {loading ? (
+          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+            <div className="w-8 h-8 border-t-2 border-primary border-solid rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          <img
+            src={imageUrl}
+            alt={`${car.brand} ${car.model}`}
+            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+            onError={() => setImageUrl('https://via.placeholder.com/400x300?text=Error')}
+          />
+        )}
+      </div>
+      <div className="p-4">
+        <h3 className="text-lg font-bold mb-2 text-neutral-dark">
+          {car.brand} {car.model} ({car.year})
+        </h3>
+        <p className="text-primary font-bold mb-2">${car.price.toLocaleString()}</p>
+        <div className="flex flex-wrap gap-2 text-sm text-neutral/70">
+          <span>{car.mileage} miles</span>
+          <span>•</span>
+          <span>{car.transmission}</span>
+          <span>•</span>
+          <span>{car.fuel}</span>
+        </div>
+      </div>
+    </Link>
   );
 }
 
