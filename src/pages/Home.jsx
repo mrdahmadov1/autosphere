@@ -7,11 +7,24 @@ import { getPlaceholder } from '../utils/imageUtils';
 
 function Home() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterBrand, setFilterBrand] = useState('');
+  const [filters, setFilters] = useState({
+    brand: '',
+    minPrice: '',
+    maxPrice: '',
+    minYear: '',
+    maxYear: '',
+    fuel: '',
+    transmission: '',
+    minMileage: '',
+    maxMileage: '',
+    color: '',
+  });
+  const [sortBy, setSortBy] = useState('newest');
   const [filteredCars, setFilteredCars] = useState([]);
   const [allCars, setAllCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   useEffect(() => {
     async function fetchCars() {
@@ -51,35 +64,130 @@ function Home() {
   }, []);
 
   const uniqueBrands = [...new Set(allCars.map((car) => car.brand))];
+  const uniqueColors = [...new Set(allCars.map((car) => car.color))];
+  const uniqueFuels = [...new Set(allCars.map((car) => car.fuel))];
+  const uniqueTransmissions = [...new Set(allCars.map((car) => car.transmission))];
 
   const handleSearch = (e) => {
     const term = e.target.value;
     setSearchTerm(term);
-    filterCars(term, filterBrand);
   };
 
-  const handleBrandFilter = (e) => {
-    const brand = e.target.value;
-    setFilterBrand(brand);
-    filterCars(searchTerm, brand);
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  const filterCars = (term, brand) => {
+  const handleSortChange = (e) => {
+    const value = e.target.value;
+    setSortBy(value);
+  };
+
+  const sortCars = (sortType) => {
+    let sorted = [...filteredCars];
+    switch (sortType) {
+      case 'newest':
+        sorted.sort((a, b) => b.year - a.year);
+        break;
+      case 'oldest':
+        sorted.sort((a, b) => a.year - b.year);
+        break;
+      case 'price-low':
+        sorted.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-high':
+        sorted.sort((a, b) => b.price - a.price);
+        break;
+      case 'mileage-low':
+        sorted.sort((a, b) => a.mileage - b.mileage);
+        break;
+      case 'mileage-high':
+        sorted.sort((a, b) => b.mileage - a.mileage);
+        break;
+      default:
+        break;
+    }
+    setFilteredCars(sorted);
+  };
+
+  const applyFilters = () => {
     let filtered = allCars;
 
-    if (term) {
+    // Text search
+    if (searchTerm) {
       filtered = filtered.filter(
         (car) =>
-          car.brand.toLowerCase().includes(term.toLowerCase()) ||
-          car.model.toLowerCase().includes(term.toLowerCase())
+          car.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          car.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          car.description.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    if (brand) {
-      filtered = filtered.filter((car) => car.brand === brand);
+    // Brand filter
+    if (filters.brand) {
+      filtered = filtered.filter((car) => car.brand === filters.brand);
     }
 
+    // Price range
+    if (filters.minPrice) {
+      filtered = filtered.filter((car) => car.price >= Number(filters.minPrice));
+    }
+    if (filters.maxPrice) {
+      filtered = filtered.filter((car) => car.price <= Number(filters.maxPrice));
+    }
+
+    // Year range
+    if (filters.minYear) {
+      filtered = filtered.filter((car) => car.year >= Number(filters.minYear));
+    }
+    if (filters.maxYear) {
+      filtered = filtered.filter((car) => car.year <= Number(filters.maxYear));
+    }
+
+    // Fuel type
+    if (filters.fuel) {
+      filtered = filtered.filter((car) => car.fuel === filters.fuel);
+    }
+
+    // Transmission
+    if (filters.transmission) {
+      filtered = filtered.filter((car) => car.transmission === filters.transmission);
+    }
+
+    // Mileage range
+    if (filters.minMileage) {
+      filtered = filtered.filter((car) => car.mileage >= Number(filters.minMileage));
+    }
+    if (filters.maxMileage) {
+      filtered = filtered.filter((car) => car.mileage <= Number(filters.maxMileage));
+    }
+
+    // Color
+    if (filters.color) {
+      filtered = filtered.filter((car) => car.color === filters.color);
+    }
+
+    // Apply current sort
+    sortCars(sortBy);
     setFilteredCars(filtered);
+  };
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setFilters({
+      brand: '',
+      minPrice: '',
+      maxPrice: '',
+      minYear: '',
+      maxYear: '',
+      fuel: '',
+      transmission: '',
+      minMileage: '',
+      maxMileage: '',
+      color: '',
+    });
+    setSortBy('newest');
+    setFilteredCars(allCars);
   };
 
   return (
@@ -96,26 +204,209 @@ function Home() {
             Discover our extensive collection of premium vehicles. Quality, reliability, and style
             all in one place.
           </p>
-          <div className="flex flex-col md:flex-row gap-6 justify-center max-w-3xl mx-auto">
-            <input
-              type="text"
-              placeholder="Search by brand or model..."
-              value={searchTerm}
-              onChange={handleSearch}
-              className="py-4 px-6 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-primary shadow-md w-full"
-            />
-            <select
-              value={filterBrand}
-              onChange={handleBrandFilter}
-              className="py-4 px-6 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-primary shadow-md bg-white w-full md:w-64"
+          <div className="flex flex-col gap-6 justify-center max-w-3xl mx-auto">
+            <div className="flex flex-col md:flex-row gap-4">
+              <input
+                type="text"
+                placeholder="Search by brand, model, or description..."
+                value={searchTerm}
+                onChange={handleSearch}
+                className="py-4 px-6 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-primary shadow-md w-full"
+              />
+              <select
+                value={sortBy}
+                onChange={handleSortChange}
+                className="py-4 px-6 pr-10 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-primary shadow-md bg-white w-full md:w-64 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236B7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="mileage-low">Mileage: Low to High</option>
+                <option value="mileage-high">Mileage: High to Low</option>
+              </select>
+            </div>
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="text-white hover:text-primary transition-colors"
             >
-              <option value="">All Brands</option>
-              {uniqueBrands.map((brand) => (
-                <option key={brand} value={brand}>
-                  {brand}
-                </option>
-              ))}
-            </select>
+              {showAdvancedFilters ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
+            </button>
+            {showAdvancedFilters && (
+              <div className="bg-white/95 backdrop-blur-sm p-8 rounded-xl shadow-xl">
+                <h3 className="text-2xl font-bold text-neutral-dark mb-6">Advanced Filters</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-neutral-dark">Brand</label>
+                    <select
+                      name="brand"
+                      value={filters.brand}
+                      onChange={handleFilterChange}
+                      className="w-full py-3 px-4 pr-10 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-primary bg-white text-neutral-dark appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236B7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat"
+                    >
+                      <option value="">Select Brand</option>
+                      {uniqueBrands.map((brand) => (
+                        <option key={brand} value={brand}>
+                          {brand}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-neutral-dark">
+                      Price Range
+                    </label>
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <input
+                          type="number"
+                          name="minPrice"
+                          value={filters.minPrice}
+                          onChange={handleFilterChange}
+                          placeholder="Min Price ($)"
+                          className="w-full py-3 px-4 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-primary bg-white text-neutral-dark"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="number"
+                          name="maxPrice"
+                          value={filters.maxPrice}
+                          onChange={handleFilterChange}
+                          placeholder="Max Price ($)"
+                          className="w-full py-3 px-4 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-primary bg-white text-neutral-dark"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-neutral-dark">
+                      Year Range
+                    </label>
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <input
+                          type="number"
+                          name="minYear"
+                          value={filters.minYear}
+                          onChange={handleFilterChange}
+                          placeholder="From Year"
+                          className="w-full py-3 px-4 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-primary bg-white text-neutral-dark"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="number"
+                          name="maxYear"
+                          value={filters.maxYear}
+                          onChange={handleFilterChange}
+                          placeholder="To Year"
+                          className="w-full py-3 px-4 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-primary bg-white text-neutral-dark"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-neutral-dark">Fuel Type</label>
+                    <select
+                      name="fuel"
+                      value={filters.fuel}
+                      onChange={handleFilterChange}
+                      className="w-full py-3 px-4 pr-10 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-primary bg-white text-neutral-dark appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236B7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat"
+                    >
+                      <option value="">Select Fuel Type</option>
+                      {uniqueFuels.map((fuel) => (
+                        <option key={fuel} value={fuel}>
+                          {fuel}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-neutral-dark">
+                      Transmission
+                    </label>
+                    <select
+                      name="transmission"
+                      value={filters.transmission}
+                      onChange={handleFilterChange}
+                      className="w-full py-3 px-4 pr-10 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-primary bg-white text-neutral-dark appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236B7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat"
+                    >
+                      <option value="">Select Transmission</option>
+                      {uniqueTransmissions.map((transmission) => (
+                        <option key={transmission} value={transmission}>
+                          {transmission}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-neutral-dark">
+                      Mileage Range
+                    </label>
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <input
+                          type="number"
+                          name="minMileage"
+                          value={filters.minMileage}
+                          onChange={handleFilterChange}
+                          placeholder="Min Mileage"
+                          className="w-full py-3 px-4 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-primary bg-white text-neutral-dark"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="number"
+                          name="maxMileage"
+                          value={filters.maxMileage}
+                          onChange={handleFilterChange}
+                          placeholder="Max Mileage"
+                          className="w-full py-3 px-4 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-primary bg-white text-neutral-dark"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-neutral-dark">Color</label>
+                    <select
+                      name="color"
+                      value={filters.color}
+                      onChange={handleFilterChange}
+                      className="w-full py-3 px-4 pr-10 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-primary bg-white text-neutral-dark appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236B7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat"
+                    >
+                      <option value="">Select Color</option>
+                      {uniqueColors.map((color) => (
+                        <option key={color} value={color}>
+                          {color}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex justify-end gap-4">
+                  <button
+                    onClick={resetFilters}
+                    className="px-6 py-3 text-neutral-dark hover:text-primary border-2 border-gray-200 hover:border-primary rounded-lg transition-colors font-medium"
+                  >
+                    Reset All Filters
+                  </button>
+                  <button
+                    onClick={applyFilters}
+                    className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium"
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -146,92 +437,51 @@ function Home() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredCars.map((car) => (
-                <div key={car.id} className="card group">
-                  <div className="relative overflow-hidden h-60">
+                <Link
+                  key={car.id}
+                  to={`/cars/${car.id}`}
+                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                >
+                  <div className="relative h-48">
                     {car.imagePath ? (
                       <CarImage car={car} />
                     ) : (
                       <img
                         src={car.image || getPlaceholder('car')}
                         alt={`${car.brand} ${car.model}`}
-                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = getPlaceholder('error');
+                        }}
                       />
                     )}
-                    <div className="absolute top-4 right-4 bg-accent text-neutral-dark font-bold py-1 px-3 rounded-full">
-                      {car.year}
-                    </div>
                   </div>
                   <div className="p-6">
-                    <h3 className="text-xl font-bold mb-2 text-neutral-dark">
+                    <h3 className="text-xl font-bold text-neutral-dark mb-2">
                       {car.brand} {car.model}
                     </h3>
-                    <div className="flex gap-3 mb-4">
-                      <span className="text-neutral/70 text-sm flex items-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 mr-1"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        {car.mileage} miles
-                      </span>
-                      <span className="text-neutral/70 text-sm flex items-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 mr-1"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
-                        {car.transmission}
-                      </span>
-                      <span className="text-neutral/70 text-sm flex items-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 mr-1"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                          />
-                        </svg>
-                        {car.fuel}
-                      </span>
-                    </div>
-                    <p className="text-sm text-neutral/70 mb-4 line-clamp-2">{car.description}</p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-2xl font-bold text-primary">
-                        ${car.price.toLocaleString()}
-                      </span>
-                      <Link
-                        to={`/cars/${car.id}`}
-                        className="btn-primary py-2 px-4 rounded-lg inline-block"
-                      >
-                        View Details
-                      </Link>
+                    <p className="text-primary font-semibold mb-4">${car.price.toLocaleString()}</p>
+                    <div className="grid grid-cols-2 gap-4 text-sm text-neutral/70">
+                      <div>
+                        <span className="block font-medium">Year</span>
+                        <span>{car.year}</span>
+                      </div>
+                      <div>
+                        <span className="block font-medium">Mileage</span>
+                        <span>{car.mileage.toLocaleString()} km</span>
+                      </div>
+                      <div>
+                        <span className="block font-medium">Fuel</span>
+                        <span>{car.fuel}</span>
+                      </div>
+                      <div>
+                        <span className="block font-medium">Transmission</span>
+                        <span>{car.transmission}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
