@@ -1,0 +1,160 @@
+{
+  "common": {
+    "welcome": "Xoş gəlmisiniz",
+    "home": "Ana Səhifə",
+    "about": "Haqqımızda",
+    "contact": "Əlaqə",
+    "login": "Daxil ol",
+    "logout": "Çıxış",
+    "signup": "Qeydiyyat",
+    "language": "Dil",
+    "search": "Axtar",
+    "submit": "Təsdiq et",
+    "cancel": "Ləğv et",
+    "save": "Yadda saxla",
+    "delete": "Sil",
+    "edit": "Düzəliş et",
+    "loading": "Yüklənir...",
+    "error": "Xəta",
+    "success": "Uğurlu"
+  },
+  "navigation": {
+    "dashboard": "İdarə paneli",
+    "profile": "Profil",
+    "settings": "Parametrlər",
+    "addCar": "Avtomobil əlavə et",
+    "myCars": "Mənim avtomobillərim",
+    "favorites": "Seçilmişlər"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Şifrə",
+    "confirmPassword": "Şifrəni təsdiqlə",
+    "forgotPassword": "Şifrəni unutmusunuz?",
+    "rememberMe": "Məni xatırla",
+    "loginSuccess": "Uğurla daxil oldunuz",
+    "loginError": "Daxil olmaq mümkün olmadı",
+    "registerSuccess": "Uğurla qeydiyyatdan keçdiniz",
+    "registerError": "Qeydiyyat mümkün olmadı",
+    "logoutSuccess": "Uğurla çıxış etdiniz"
+  },
+  "home": {
+    "hero": {
+      "title": "Arzuladığınız avtomobili tapın",
+      "subtitle": "Etibarlı satıcılardan minlərlə avtomobil arasından seçin",
+      "searchPlaceholder": "Marka, model və ya yerləşmə yerinə görə axtarın"
+    },
+    "featured": {
+      "title": "Seçilmiş avtomobillər",
+      "viewAll": "Hamısına bax",
+      "noCarsFound": "Axtarış kriteriyalarına uyğun avtomobil tapılmadı",
+      "tryAdjusting": "Axtarış və ya filter parametrlərini dəyişməyə çalışın",
+      "error": "Avtomobilləri yükləmək mümkün olmadı. Zəhmət olmasa, daha sonra yenidən cəhd edin."
+    },
+    "categories": {
+      "title": "Kateqoriyalara görə baxın",
+      "new": "Yeni avtomobillər",
+      "used": "İstifadə olunmuş avtomobillər",
+      "luxury": "Lüks avtomobillər",
+      "sports": "İdman avtomobilləri",
+      "suv": "SUV-lar",
+      "electric": "Elektrik avtomobilləri"
+    },
+    "whyChoose": {
+      "title": "Niyə AutoSphere seçməli?",
+      "qualityAssurance": "Keyfiyyət təminatı",
+      "qualityAssuranceDescription": "Bütün avtomobillərimiz ən yüksək keyfiyyət standartlarını təmin etmək üçün ciddi yoxlamadan keçir.",
+      "fairPrices": "Ədalətli qiymətlər",
+      "fairPricesDescription": "Gizli ödənişlər olmadan rəqabətli qiymətlər. Pulunuzun qarşılığını ən yaxşı şəkildə alın.",
+      "fastEasy": "Sürətli və asan",
+      "fastEasyDescription": "Arzuladığınız avtomobili narahatlıq olmadan tapmağınıza və almağınıza kömək edən sadə və aydın proses."
+    }
+  },
+  "carDetails": {
+    "specifications": "Spesifikasiyalar",
+    "description": "Təsvir",
+    "features": "Xüsusiyyətlər",
+    "contactSeller": "Satıcı ilə əlaqə",
+    "price": "Qiymət",
+    "year": "İl",
+    "mileage": "Yürüş",
+    "transmission": "Sürət qutusu",
+    "fuelType": "Yanacaq növü",
+    "engine": "Mühərrik",
+    "color": "Rəng",
+    "location": "Yerləşmə yeri",
+    "similarCars": "Oxşar avtomobillər",
+    "priceAnalysis": "Qiymət Analizi",
+    "priceStatus": "Qiymət Statusu",
+    "medianPrice": "Median Qiymət",
+    "marketTrend": "Bazar Trendi",
+    "priceRange": "Qiymət Aralığı",
+    "percentile": "Persentil",
+    "fuelTypes": {
+      "gasoline": "Benzin",
+      "diesel": "Dizel",
+      "electric": "Elektrik",
+      "hybrid": "Hibrid"
+    },
+    "transmissionTypes": {
+      "automatic": "Avtomat",
+      "manual": "Mexaniki"
+    }
+  },
+  "addCar": {
+    "title": "Yeni avtomobil əlavə et",
+    "form": {
+      "make": "Marka",
+      "model": "Model",
+      "year": "İl",
+      "price": "Qiymət",
+      "mileage": "Yürüş",
+      "transmission": "Sürət qutusu",
+      "fuelType": "Yanacaq növü",
+      "engine": "Mühərrik",
+      "color": "Rəng",
+      "description": "Təsvir",
+      "features": "Xüsusiyyətlər",
+      "images": "Şəkillər",
+      "location": "Yerləşmə yeri"
+    },
+    "success": "Avtomobil uğurla əlavə edildi",
+    "error": "Avtomobil əlavə etmək mümkün olmadı"
+  },
+  "profile": {
+    "title": "Mənim profilim",
+    "personalInfo": "Şəxsi məlumat",
+    "myCars": "Mənim avtomobillərim",
+    "favorites": "Seçilmişlər",
+    "settings": "Parametrlər",
+    "editProfile": "Profili düzəliş et",
+    "changePassword": "Şifrəni dəyiş",
+    "deleteAccount": "Hesabı sil"
+  },
+  "about": {
+    "title": "Haqqımızda",
+    "mission": "Bizim missiyamız",
+    "vision": "Bizim görüşümüz",
+    "team": "Bizim komandamız",
+    "values": "Bizim dəyərlərimiz",
+    "history": "Bizim tariximiz"
+  },
+  "contact": {
+    "title": "Bizimlə əlaqə",
+    "form": {
+      "name": "Ad",
+      "email": "Email",
+      "subject": "Mövzu",
+      "message": "Mesaj",
+      "send": "Mesaj göndər"
+    },
+    "info": {
+      "address": "Ünvan",
+      "phone": "Telefon",
+      "email": "Email",
+      "hours": "İş saatları"
+    },
+    "success": "Mesaj uğurla göndərildi",
+    "error": "Mesaj göndərmək mümkün olmadı"
+  }
+}

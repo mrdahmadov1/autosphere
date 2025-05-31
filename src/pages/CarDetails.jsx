@@ -4,6 +4,7 @@ import { database, ref, get } from '../firebase/config';
 import { carsData } from '../data/cars'; // Keeping as fallback
 import PropTypes from 'prop-types';
 import { getPlaceholder } from '../utils/imageUtils';
+import PriceAnalysis from '../components/PriceAnalysis';
 
 function CarDetails() {
   const { id } = useParams();
@@ -250,6 +251,11 @@ function CarDetails() {
                     {car.description ||
                       `Experience the power and elegance of this ${car.year} ${car.brand} ${car.model}. This vehicle combines superior performance with luxurious comfort, making every drive unforgettable.`}
                   </p>
+
+                  {/* Price Analysis */}
+                  <div className="mb-8">
+                    <PriceAnalysis car={car} similarCars={similarCars} />
+                  </div>
 
                   {car.features && car.features.length > 0 && (
                     <>
