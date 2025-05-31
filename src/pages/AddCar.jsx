@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/useAuth';
 import { useNotification } from '../context/NotificationContext';
 import { database, ref, set, get, remove, push, update } from '../firebase/config';
@@ -16,6 +17,7 @@ import {
 } from '../components/ui/FormElements';
 
 function AddCar() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     brand: '',
     model: '',
@@ -251,7 +253,7 @@ function AddCar() {
   }, []);
 
   // Add new feature field
-  const addFeatureField = useCallback(() => {
+  const handleAddFeature = useCallback(() => {
     setFormData((prevData) => ({
       ...prevData,
       features: [...prevData.features, ''],
@@ -259,7 +261,7 @@ function AddCar() {
   }, []);
 
   // Remove feature field
-  const removeFeatureField = useCallback((index) => {
+  const handleRemoveFeature = useCallback((index) => {
     setFormData((prevData) => {
       const updatedFeatures = prevData.features.filter((_, i) => i !== index);
       return { ...prevData, features: updatedFeatures };
@@ -422,221 +424,190 @@ function AddCar() {
     }
   };
 
-  // Form elements configuration
-  const transmissionOptions = useMemo(
-    () => [
-      { value: 'Automatic', label: 'Automatic' },
-      { value: 'Manual', label: 'Manual' },
-      { value: 'Semi-Automatic', label: 'Semi-Automatic' },
-      { value: 'CVT', label: 'CVT' },
-    ],
-    []
-  );
-
-  const fuelOptions = useMemo(
-    () => [
-      { value: 'Gasoline', label: 'Gasoline' },
-      { value: 'Diesel', label: 'Diesel' },
-      { value: 'Electric', label: 'Electric' },
-      { value: 'Hybrid', label: 'Hybrid' },
-      { value: 'Plugin Hybrid', label: 'Plugin Hybrid' },
-      { value: 'CNG', label: 'CNG' },
-      { value: 'LPG', label: 'LPG' },
-    ],
-    []
-  );
-
-  // Flag to check if form has been touched
-  const hasBeenTouched = useMemo(() => Object.keys(formTouched).length > 0, [formTouched]);
-
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">{isEditMode ? 'Edit Car' : 'Add New Car'}</h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">
+        {isEditMode ? t('addCar.editTitle') : t('addCar.title')}
+      </h1>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormGroup label="Brand" error={formTouched.brand && errors.brand}>
+          <FormGroup>
             <TextField
+              label={t('addCar.form.brand')}
               name="brand"
               value={formData.brand}
               onChange={handleChange}
-              placeholder="e.g. Toyota"
+              error={errors.brand}
+              touched={formTouched.brand}
               required
             />
           </FormGroup>
 
-          <FormGroup label="Model" error={formTouched.model && errors.model}>
+          <FormGroup>
             <TextField
+              label={t('addCar.form.model')}
               name="model"
               value={formData.model}
               onChange={handleChange}
-              placeholder="e.g. Camry"
+              error={errors.model}
+              touched={formTouched.model}
               required
             />
           </FormGroup>
 
-          <FormGroup label="Year" error={formTouched.year && errors.year}>
+          <FormGroup>
             <TextField
+              label={t('addCar.form.year')}
               name="year"
-              type="text"
+              type="number"
               value={formData.year}
               onChange={handleChange}
-              placeholder="e.g. 2022"
+              error={errors.year}
+              touched={formTouched.year}
               required
             />
           </FormGroup>
 
-          <FormGroup label="Price" error={formTouched.price && errors.price}>
+          <FormGroup>
             <TextField
+              label={t('addCar.form.price')}
               name="price"
-              type="text"
+              type="number"
               value={formData.price}
               onChange={handleChange}
-              placeholder="e.g. 25000"
+              error={errors.price}
+              touched={formTouched.price}
               required
-              leftAddon="$"
             />
           </FormGroup>
 
-          <FormGroup label="Mileage" error={formTouched.mileage && errors.mileage}>
+          <FormGroup>
             <TextField
+              label={t('addCar.form.mileage')}
               name="mileage"
-              type="text"
+              type="number"
               value={formData.mileage}
               onChange={handleChange}
-              placeholder="e.g. 15000"
-              required
-              rightAddon="miles"
-            />
-          </FormGroup>
-
-          <FormGroup label="Color" error={formTouched.color && errors.color}>
-            <TextField
-              name="color"
-              value={formData.color}
-              onChange={handleChange}
-              placeholder="e.g. Silver"
+              error={errors.mileage}
+              touched={formTouched.mileage}
               required
             />
           </FormGroup>
 
-          <FormGroup label="Transmission" error={formTouched.transmission && errors.transmission}>
+          <FormGroup>
             <SelectField
-              name="transmission"
-              value={formData.transmission}
-              onChange={handleChange}
-              options={transmissionOptions}
-              required
-            />
-          </FormGroup>
-
-          <FormGroup label="Fuel Type" error={formTouched.fuel && errors.fuel}>
-            <SelectField
+              label={t('addCar.form.fuel')}
               name="fuel"
               value={formData.fuel}
               onChange={handleChange}
-              options={fuelOptions}
+              error={errors.fuel}
+              touched={formTouched.fuel}
+              required
+            >
+              <option value="Gasoline">{t('carDetails.fuelTypes.gasoline')}</option>
+              <option value="Diesel">{t('carDetails.fuelTypes.diesel')}</option>
+              <option value="Electric">{t('carDetails.fuelTypes.electric')}</option>
+              <option value="Hybrid">{t('carDetails.fuelTypes.hybrid')}</option>
+            </SelectField>
+          </FormGroup>
+
+          <FormGroup>
+            <SelectField
+              label={t('addCar.form.transmission')}
+              name="transmission"
+              value={formData.transmission}
+              onChange={handleChange}
+              error={errors.transmission}
+              touched={formTouched.transmission}
+              required
+            >
+              <option value="Automatic">{t('carDetails.transmissionTypes.automatic')}</option>
+              <option value="Manual">{t('carDetails.transmissionTypes.manual')}</option>
+              <option value="CVT">{t('carDetails.transmissionTypes.cvt')}</option>
+            </SelectField>
+          </FormGroup>
+
+          <FormGroup>
+            <TextField
+              label={t('addCar.form.color')}
+              name="color"
+              value={formData.color}
+              onChange={handleChange}
+              error={errors.color}
+              touched={formTouched.color}
               required
             />
           </FormGroup>
-        </div>
 
-        <FormGroup label="Car Image" error={formTouched.image && errors.image}>
-          <FileField
-            name="image"
-            onChange={handleImageChange}
-            accept="image/jpeg, image/png, image/webp"
-          />
-          {imagePreview && (
-            <div className="mt-2">
-              <p className="text-sm text-gray-600 mb-2">Preview:</p>
-              <img
-                src={imagePreview}
-                alt="Car preview"
-                className="w-full max-w-md h-auto rounded-lg border border-gray-300"
-              />
-            </div>
-          )}
-        </FormGroup>
+          <FormGroup className="md:col-span-2">
+            <TextArea
+              label={t('addCar.form.description')}
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              error={errors.description}
+              touched={formTouched.description}
+              required
+            />
+          </FormGroup>
 
-        <FormGroup label="Description" error={formTouched.description && errors.description}>
-          <TextArea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder="Tell us about your car"
-            rows={4}
-            required
-          />
-        </FormGroup>
+          <FormGroup className="md:col-span-2">
+            <FileField
+              label={t('addCar.form.images')}
+              name="image"
+              onChange={handleImageChange}
+              error={errors.image}
+              touched={formTouched.image}
+              required={!isEditMode}
+              accept="image/*"
+            />
+            {imagePreview && (
+              <div className="mt-4">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-32 h-32 object-cover rounded-lg"
+                />
+              </div>
+            )}
+          </FormGroup>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Features</label>
-          {formData.features.map((feature, index) => (
-            <div key={index} className="flex items-center mb-2">
-              <TextField
-                value={feature}
-                onChange={(e) => handleFeatureChange(index, e.target.value)}
-                placeholder={`Feature ${index + 1}`}
-                className="flex-grow"
-              />
-              <button
-                type="button"
-                onClick={() => removeFeatureField(index)}
-                className="ml-2 p-2 text-red-500 hover:text-red-700"
-                disabled={formData.features.length === 1}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                    clipRule="evenodd"
+          <FormGroup className="md:col-span-2">
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-gray-700">
+                {t('addCar.form.features')}
+              </label>
+              {formData.features.map((feature, index) => (
+                <div key={index} className="flex gap-2">
+                  <TextField
+                    value={feature}
+                    onChange={(e) => handleFeatureChange(index, e.target.value)}
+                    placeholder={t('addCar.form.featurePlaceholder')}
                   />
-                </svg>
-              </button>
+                  <Button
+                    type="button"
+                    onClick={() => handleRemoveFeature(index)}
+                    variant="danger"
+                    className="px-3"
+                  >
+                    {t('common.delete')}
+                  </Button>
+                </div>
+              ))}
+              <Button type="button" onClick={handleAddFeature} variant="secondary" className="mt-2">
+                {t('addCar.form.addFeature')}
+              </Button>
             </div>
-          ))}
-          <button
-            type="button"
-            onClick={addFeatureField}
-            className="inline-flex items-center text-blue-600 hover:text-blue-800"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-1"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Add Feature
-          </button>
+          </FormGroup>
         </div>
 
-        {hasBeenTouched && hasErrors(errors) && (
-          <FormError message="Please fix the errors in the form before submitting." />
-        )}
-
-        <div className="flex justify-between">
-          <Button
-            type="button"
-            onClick={() => navigate('/profile')}
-            variant="outline"
-            disabled={loading}
-          >
-            Cancel
+        <div className="mt-8 flex justify-end gap-4">
+          <Button type="button" onClick={() => navigate(-1)} variant="secondary">
+            {t('common.cancel')}
           </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Saving...' : isEditMode ? 'Update Car' : 'Add Car'}
+          <Button type="submit" variant="primary" loading={loading}>
+            {isEditMode ? t('common.save') : t('addCar.form.submit')}
           </Button>
         </div>
       </form>

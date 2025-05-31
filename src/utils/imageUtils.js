@@ -112,22 +112,70 @@ export const validateImage = (file) => {
  */
 export const processImageForUpload = async (file) => {
   try {
-    // Validate the image first
-    const validation = validateImage(file);
-    if (!validation.valid) {
-      return { processedImage: null, error: validation.error };
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      return { error: 'File must be an image' };
     }
 
-    // Compress image if it's larger than threshold (500KB)
-    const processedImage = file.size > 500 * 1024 ? await compressImage(file) : file;
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      return { error: 'Image size must be less than 5MB' };
+    }
 
-    return { processedImage, error: null };
+    // Create a promise to handle image processing
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        const img = new Image();
+
+        img.onload = () => {
+          // Create canvas for image processing
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          // Calculate new dimensions (max 1200px width/height)
+          let width = img.width;
+          let height = img.height;
+          const maxSize = 1200;
+
+          if (width > height && width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          } else if (height > maxSize) {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+
+          // Set canvas dimensions
+          canvas.width = width;
+          canvas.height = height;
+
+          // Draw and compress image
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convert to base64 with quality 0.8
+          const base64 = canvas.toDataURL('image/jpeg', 0.8);
+
+          resolve({ processedImage: file, base64 });
+        };
+
+        img.onerror = () => {
+          reject(new Error('Failed to load image'));
+        };
+
+        img.src = e.target.result;
+      };
+
+      reader.onerror = () => {
+        reject(new Error('Failed to read file'));
+      };
+
+      reader.readAsDataURL(file);
+    });
   } catch (error) {
     console.error('Error processing image:', error);
-    return {
-      processedImage: null,
-      error: 'Error processing image: ' + error.message,
-    };
+    return { error: error.message || 'Failed to process image' };
   }
 };
 
@@ -149,35 +197,21 @@ export const fileToBase64 = (file) => {
  * Utility functions for generating and handling placeholder images
  */
 
-// Default fallback image (base64 encoded small gray placeholder)
-const DEFAULT_PLACEHOLDER =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2VlZWVlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMThweCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OTk5OSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+';
+// Placeholder images for different states
+const PLACEHOLDERS = {
+  loading:
+    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNFNUU3RUIiLz48cGF0aCBkPSJNMTAwIDUwQzcyLjM4NiA1MCA1MCA3Mi4zODYgNTAgMTAwQzUwIDEyNy42MTQgNzIuMzg2IDE1MCAxMDAgMTUwQzEyNy42MTQgMTUwIDE1MCAxMjcuNjE0IDE1MCAxMDBDMTUwIDcyLjM4NiAxMjcuNjE0IDUwIDEwMCA1MFpNMTAwIDEzMEM4OS4wMTkgMTMwIDgwIDEyMC45ODEgODAgMTEwQzgwIDk5LjAxODggODkuMDE5IDkwIDEwMCA5MEMxMTAuOTgxIDkwIDEyMCA5OS4wMTg4IDEyMCAxMTBDMTIwIDEyMC45ODEgMTEwLjk4MSAxMzAgMTAwIDEzMFoiIGZpbGw9IiM2QjcyRkYiLz48L3N2Zz4=',
+  error:
+    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNGRkYxRjEiLz48cGF0aCBkPSJNMTAwIDUwQzcyLjM4NiA1MCA1MCA3Mi4zODYgNTAgMTAwQzUwIDEyNy42MTQgNzIuMzg2IDE1MCAxMDAgMTUwQzEyNy42MTQgMTUwIDE1MCAxMjcuNjE0IDE1MCAxMDBDMTUwIDcyLjM4NiAxMjcuNjE0IDUwIDEwMCA1MFpNMTAwIDEzMEM4OS4wMTkgMTMwIDgwIDEyMC45ODEgODAgMTEwQzgwIDk5LjAxODggODkuMDE5IDkwIDEwMCA5MEMxMTAuOTgxIDkwIDEyMCA5OS4wMTg4IDEyMCAxMTBDMTIwIDEyMC45ODEgMTEwLjk4MSAxMzAgMTAwIDEzMFoiIGZpbGw9IiNFRjQ0NDQiLz48L3N2Zz4=',
+  car: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNFNUU3RUIiLz48cGF0aCBkPSJNMTYwIDgwSDE0MFY2MEMxNDAgNTUuNTcyIDEzNi40MjggNTIgMTMyIDUySDY4QzYzLjU3MiA1MiA2MCA1NS41NzIgNjAgNjBWODBINDBDNDAgODAgNDAgODAgNDAgODBWMTIwQzQwIDEyMCA0MCAxMjAgNDAgMTIwSDE2MEMxNjAgMTIwIDE2MCAxMjAgMTYwIDEyMFY4MEMxNjAgODAgMTYwIDgwIDE2MCA4MFpNNjggNjBIMTMyVjgwSDY4VjYwWk00MCAxMjBIMTYwVjE0MEg0MFYxMjBaIiBmaWxsPSIjNkI3MkZGIi8+PC9zdmc+',
+  default:
+    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNFNUU3RUIiLz48cGF0aCBkPSJNMTAwIDUwQzcyLjM4NiA1MCA1MCA3Mi4zODYgNTAgMTAwQzUwIDEyNy42MTQgNzIuMzg2IDE1MCAxMDAgMTUwQzEyNy42MTQgMTUwIDE1MCAxMjcuNjE0IDE1MCAxMDBDMTUwIDcyLjM4NiAxMjcuNjE0IDUwIDEwMCA1MFpNMTAwIDEzMEM4OS4wMTkgMTMwIDgwIDEyMC45ODEgODAgMTEwQzgwIDk5LjAxODggODkuMDE5IDkwIDEwMCA5MEMxMTAuOTgxIDkwIDEyMCA5OS4wMTg4IDEyMCAxMTBDMTIwIDEyMC45ODEgMTEwLjk4MSAxMzAgMTAwIDEzMFoiIGZpbGw9IiM2QjcyRkYiLz48L3N2Zz4=',
+};
 
-// More specific placeholders
-const LOADING_PLACEHOLDER =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMThweCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzY2NjY2NiI+TG9hZGluZy4uLjwvdGV4dD48L3N2Zz4=';
-const ERROR_PLACEHOLDER =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2ZmZWVlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMThweCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2NjMDAwMCI+RXJyb3IgTG9hZGluZyBJbWFnZTwvdGV4dD48L3N2Zz4=';
-const CAR_PLACEHOLDER =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2YwZjVmZiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMThweCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzMzNjZjYyI+Q2FyIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
-
-/**
- * Get placeholder image based on type
- * @param {string} type - Type of placeholder (default, loading, error, car)
- * @returns {string} URL for the placeholder image
- */
-export function getPlaceholder(type = 'default') {
-  switch (type) {
-    case 'loading':
-      return LOADING_PLACEHOLDER;
-    case 'error':
-      return ERROR_PLACEHOLDER;
-    case 'car':
-      return CAR_PLACEHOLDER;
-    default:
-      return DEFAULT_PLACEHOLDER;
-  }
-}
+// Get placeholder image based on type
+export const getPlaceholder = (type = 'default') => {
+  return PLACEHOLDERS[type] || PLACEHOLDERS.default;
+};
 
 /**
  * Create a data URL for a custom placeholder with text
@@ -204,8 +238,8 @@ export function createCustomPlaceholder(
 export default {
   getPlaceholder,
   createCustomPlaceholder,
-  DEFAULT_PLACEHOLDER,
-  LOADING_PLACEHOLDER,
-  ERROR_PLACEHOLDER,
-  CAR_PLACEHOLDER,
+  DEFAULT_PLACEHOLDER: PLACEHOLDERS.default,
+  LOADING_PLACEHOLDER: PLACEHOLDERS.loading,
+  ERROR_PLACEHOLDER: PLACEHOLDERS.error,
+  CAR_PLACEHOLDER: PLACEHOLDERS.car,
 };

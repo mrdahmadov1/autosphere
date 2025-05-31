@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { currentUser } = useAuth();
+  const { t } = useTranslation();
 
   const navItems = [
-    { name: 'Home', path: '/' },
-    { name: 'About', path: '/about' },
-    { name: 'Contact', path: '/contact' },
+    { name: t('common.home'), path: '/' },
+    { name: t('common.about'), path: '/about' },
+    { name: t('common.contact'), path: '/contact' },
   ];
 
   const toggleMobileMenu = () => {
@@ -41,14 +44,15 @@ function Navbar() {
         </div>
 
         {/* Auth Navigation - Desktop */}
-        <div className="hidden md:flex items-center">
+        <div className="hidden md:flex items-center space-x-4">
+          <LanguageSwitcher />
           {currentUser ? (
             <div className="flex items-center space-x-6">
               <Link
                 to="/add-car"
                 className="text-white bg-accent hover:bg-accent/80 px-4 py-2 rounded-lg font-medium transition-colors duration-300"
               >
-                Add Car
+                {t('navigation.addCar')}
               </Link>
               <Link to="/profile" className="text-white flex items-center hover:text-accent">
                 <svg
@@ -65,7 +69,7 @@ function Navbar() {
                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                   />
                 </svg>
-                {currentUser.displayName || 'Profile'}
+                {currentUser.displayName || t('navigation.profile')}
               </Link>
             </div>
           ) : (
@@ -74,13 +78,13 @@ function Navbar() {
                 to="/login"
                 className="text-white hover:text-accent transition-colors duration-300"
               >
-                Log In
+                {t('common.login')}
               </Link>
               <Link
                 to="/register"
                 className="text-white bg-accent hover:bg-accent/80 px-4 py-2 rounded-lg font-medium transition-colors duration-300"
               >
-                Sign Up
+                {t('common.signup')}
               </Link>
             </div>
           )}
@@ -120,6 +124,9 @@ function Navbar() {
       {mobileMenuOpen && (
         <div className="md:hidden absolute top-16 inset-x-0 z-50 bg-white shadow-lg rounded-b-lg">
           <div className="flex flex-col px-4 py-4">
+            <div className="py-3 border-b border-gray-100">
+              <LanguageSwitcher />
+            </div>
             {navItems.map((item) => (
               <Link
                 key={item.name}
@@ -141,14 +148,14 @@ function Navbar() {
                   className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  My Profile
+                  {t('navigation.profile')}
                 </Link>
                 <Link
                   to="/add-car"
                   className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Add Car
+                  {t('navigation.addCar')}
                 </Link>
               </>
             ) : (
@@ -158,14 +165,14 @@ function Navbar() {
                   className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Log In
+                  {t('common.login')}
                 </Link>
                 <Link
                   to="/register"
                   className="py-3 text-neutral-dark font-medium text-lg"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Sign Up
+                  {t('common.signup')}
                 </Link>
               </>
             )}

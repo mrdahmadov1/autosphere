@@ -5,6 +5,7 @@ import './index.css';
 import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import './i18n';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
