@@ -148,8 +148,9 @@ export const validateCarForm = (formData, requireImage = true) => {
 
   // Required text fields
   ['brand', 'model', 'color'].forEach((field) => {
-    const error = validateRequired(formData[field], field.charAt(0).toUpperCase() + field.slice(1));
-    if (error) errors[field] = error;
+    if (!formData[field] || formData[field].trim() === '') {
+      errors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
+    }
   });
 
   // Description
@@ -158,20 +159,39 @@ export const validateCarForm = (formData, requireImage = true) => {
   }
 
   // Year
-  const yearError = validateYear(formData.year);
-  if (yearError) errors.year = yearError;
+  if (!formData.year || isNaN(formData.year)) {
+    errors.year = 'Please select a valid year';
+  } else {
+    const year = parseInt(formData.year);
+    const currentYear = new Date().getFullYear();
+    if (year < 1900 || year > currentYear) {
+      errors.year = `Year must be between 1900 and ${currentYear}`;
+    }
+  }
 
   // Price
-  const priceError = validatePositiveNumber(formData.price, 'Price');
-  if (priceError) errors.price = priceError;
+  if (!formData.price || isNaN(formData.price)) {
+    errors.price = 'Please enter a valid price';
+  } else {
+    const price = parseInt(formData.price);
+    if (price <= 0) {
+      errors.price = 'Price must be greater than 0';
+    }
+  }
 
   // Mileage
-  const mileageError = validateNonNegativeNumber(formData.mileage, 'Mileage');
-  if (mileageError) errors.mileage = mileageError;
+  if (!formData.mileage || isNaN(formData.mileage)) {
+    errors.mileage = 'Please enter a valid mileage';
+  } else {
+    const mileage = parseInt(formData.mileage);
+    if (mileage < 0) {
+      errors.mileage = 'Mileage cannot be negative';
+    }
+  }
 
   // Image validation
-  if (requireImage && !formData.image && !formData.imagePreview) {
-    errors.image = 'Please upload an image of the car';
+  if (requireImage && (!formData.images || formData.images.length === 0)) {
+    errors.image = 'Please upload at least one image of the car';
   }
 
   return errors;

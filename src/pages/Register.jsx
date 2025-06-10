@@ -16,11 +16,11 @@ function Register() {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      return setError('Passwords do not match');
+      return setError('Şifrələr uyğun gəlmir');
     }
 
     if (password.length < 6) {
-      return setError('Password must be at least 6 characters');
+      return setError('Şifrə ən azı 6 simvol olmalıdır');
     }
 
     try {
@@ -29,7 +29,7 @@ function Register() {
       await signup(email, password, name);
       navigate('/');
     } catch (error) {
-      setError('Failed to create an account. ' + error.message);
+      setError('Hesab yaradıla bilmədi. ' + error.message);
       console.error(error);
     } finally {
       setLoading(false);
@@ -39,7 +39,7 @@ function Register() {
   return (
     <div className="max-w-md mx-auto my-12 px-4">
       <div className="bg-white rounded-xl shadow-card p-8">
-        <h1 className="text-3xl font-bold text-neutral-dark mb-6 text-center">Create Account</h1>
+        <h1 className="text-3xl font-bold text-neutral-dark mb-6 text-center">Hesab Yarat</h1>
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -50,7 +50,7 @@ function Register() {
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="name" className="block text-neutral-dark mb-2">
-              Full Name
+              Ad Soyad
             </label>
             <input
               type="text"
@@ -64,7 +64,7 @@ function Register() {
 
           <div className="mb-4">
             <label htmlFor="email" className="block text-neutral-dark mb-2">
-              Email
+              E-poçt
             </label>
             <input
               type="email"
@@ -78,7 +78,7 @@ function Register() {
 
           <div className="mb-4">
             <label htmlFor="password" className="block text-neutral-dark mb-2">
-              Password
+              Şifrə
             </label>
             <input
               type="password"
@@ -92,7 +92,7 @@ function Register() {
 
           <div className="mb-6">
             <label htmlFor="confirmPassword" className="block text-neutral-dark mb-2">
-              Confirm Password
+              Şifrəni Təsdiqləyin
             </label>
             <input
               type="password"
@@ -109,14 +109,14 @@ function Register() {
             disabled={loading}
             className="btn-primary w-full py-3 rounded-lg mb-4"
           >
-            {loading ? 'Creating Account...' : 'Sign Up'}
+            {loading ? 'Hesab yaradılır...' : 'Qeydiyyatdan Keç'}
           </button>
 
           <div className="text-center">
             <p className="text-neutral/70">
-              Already have an account?{' '}
+              Artıq hesabınız var?{' '}
               <Link to="/login" className="text-primary font-medium">
-                Log In
+                Daxil Ol
               </Link>
             </p>
           </div>

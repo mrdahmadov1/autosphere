@@ -9,7 +9,8 @@ function Footer() {
           <div>
             <h3 className="text-2xl font-heading font-bold mb-6">AutoSphere</h3>
             <p className="text-gray-300 mb-4">
-              Providing quality vehicles and exceptional customer service since 2005.
+              2005-ci ildən etibarən keyfiyyətli avtomobillər və mükəmməl müştəri xidməti təqdim
+              edirik.
             </p>
             <div className="flex space-x-4 mt-6">
               <a href="#" className="text-white hover:text-accent transition-colors duration-300">
@@ -40,43 +41,43 @@ function Footer() {
 
           {/* Contact Info */}
           <div>
-            <h3 className="text-xl font-heading font-bold mb-6">Contact Us</h3>
+            <h3 className="text-xl font-heading font-bold mb-6">Bizimlə Əlaqə</h3>
             <address className="not-italic">
-              <p className="mb-3">123 Main Street, Anytown, ST 12345</p>
+              <p className="mb-3">123 Baş Küçə, Bakı şəhəri, AZ 1000</p>
               <p className="mb-3">
-                <span className="font-bold">Email:</span>{' '}
+                <span className="font-bold">E-poçt:</span>{' '}
                 <a href="mailto:info@autosphere.com" className="text-gray-300 hover:text-accent">
                   info@autosphere.com
                 </a>
               </p>
               <p className="mb-3">
-                <span className="font-bold">Phone:</span>{' '}
+                <span className="font-bold">Telefon:</span>{' '}
                 <a href="tel:+11234567890" className="text-gray-300 hover:text-accent">
                   (123) 456-7890
                 </a>
               </p>
               <p>
-                <span className="font-bold">Hours:</span>
+                <span className="font-bold">İş saatları:</span>
                 <br />
-                Mon-Fri: 9AM-6PM
+                Bazar ertəsi-Cümə: 09:00-18:00
                 <br />
-                Sat: 10AM-4PM
+                Şənbə: 10:00-16:00
                 <br />
-                Sun: Closed
+                Bazar: Bağlı
               </p>
             </address>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-xl font-heading font-bold mb-6">Quick Links</h3>
+            <h3 className="text-xl font-heading font-bold mb-6">Sürətli Keçidlər</h3>
             <ul className="space-y-3">
               <li>
                 <Link
                   to="/"
                   className="text-gray-300 hover:text-accent transition-colors duration-300"
                 >
-                  Home
+                  Ana Səhifə
                 </Link>
               </li>
               <li>
@@ -84,7 +85,7 @@ function Footer() {
                   to="/about"
                   className="text-gray-300 hover:text-accent transition-colors duration-300"
                 >
-                  About Us
+                  Haqqımızda
                 </Link>
               </li>
               <li>
@@ -92,7 +93,7 @@ function Footer() {
                   to="/contact"
                   className="text-gray-300 hover:text-accent transition-colors duration-300"
                 >
-                  Contact
+                  Əlaqə
                 </Link>
               </li>
               <li>
@@ -100,7 +101,7 @@ function Footer() {
                   href="#"
                   className="text-gray-300 hover:text-accent transition-colors duration-300"
                 >
-                  Privacy Policy
+                  Məxfilik Siyasəti
                 </a>
               </li>
               <li>
@@ -108,7 +109,7 @@ function Footer() {
                   href="#"
                   className="text-gray-300 hover:text-accent transition-colors duration-300"
                 >
-                  Terms of Service
+                  Xidmət Şərtləri
                 </a>
               </li>
             </ul>
@@ -116,7 +117,7 @@ function Footer() {
         </div>
 
         <div className="border-t border-gray-700 mt-12 pt-8 text-center text-gray-400">
-          <p>© {new Date().getFullYear()} AutoSphere. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} AutoSphere. Bütün hüquqlar qorunur.</p>
         </div>
       </div>
     </footer>

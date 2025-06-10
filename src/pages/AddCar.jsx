@@ -4,7 +4,8 @@ import { useAuth } from '../context/useAuth';
 import { useNotification } from '../context/NotificationContext';
 import { database, ref, set, get, remove, push, update } from '../firebase/config';
 import { processImageForUpload } from '../utils/imageUtils';
-import { validateCarForm, hasErrors } from '../utils/validationUtils';
+import { validateCarForm } from '../utils/validationUtils';
+import { carMakesAndModels, carMakes } from '../data/carMakesAndModels';
 import {
   FormGroup,
   TextField,
@@ -12,7 +13,6 @@ import {
   SelectField,
   FileField,
   Button,
-  FormError,
 } from '../components/ui/FormElements';
 
 function AddCar() {
@@ -22,15 +22,15 @@ function AddCar() {
     year: new Date().getFullYear(),
     price: '',
     mileage: '',
-    fuel: 'Gasoline',
-    transmission: 'Automatic',
+    fuel: 'Benzin',
+    transmission: 'Avtomatik',
     color: '',
     description: '',
     features: [''],
   });
 
-  const [image, setImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
+  const [images, setImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [isEditMode, setIsEditMode] = useState(false);
@@ -41,6 +41,11 @@ function AddCar() {
   const { success, error: showError } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Get available models based on selected brand
+  const availableModels = useMemo(() => {
+    return formData.brand ? carMakesAndModels[formData.brand] || [] : [];
+  }, [formData.brand]);
 
   // Check if we're in edit mode
   useEffect(() => {
@@ -55,33 +60,34 @@ function AddCar() {
         if (snapshot.exists()) {
           const completeData = snapshot.val();
 
-          // If we have an imagePath, fetch the image from the database
-          if (completeData.imagePath) {
+          // If we have imagePaths, fetch the images from the database
+          if (completeData.imagePaths && completeData.imagePaths.length > 0) {
             try {
-              const imageRef = ref(database, completeData.imagePath);
-              const imageSnapshot = await get(imageRef);
-
-              if (imageSnapshot.exists()) {
-                const imageData = imageSnapshot.val();
-                if (imageData && imageData.data) {
-                  // Use the base64 data directly for the preview
-                  setImagePreview(imageData.data);
+              const imagePromises = completeData.imagePaths.map(async (imagePath) => {
+                const imageRef = ref(database, imagePath);
+                const imageSnapshot = await get(imageRef);
+                if (imageSnapshot.exists()) {
+                  const imageData = imageSnapshot.val();
+                  if (imageData && imageData.data) {
+                    return imageData.data;
+                  }
                 }
-              }
+                return null;
+              });
+
+              const imageResults = await Promise.all(imagePromises);
+              const validImages = imageResults.filter((data) => data !== null);
+              setImagePreviews(validImages);
             } catch (err) {
-              console.error('Error fetching image from database:', err);
+              console.error('Error fetching images from database:', err);
             }
-          } else if (completeData.image) {
-            // For backward compatibility
-            setImagePreview(completeData.image);
           }
 
           // Return full car data
           return {
             id: carData.id,
             ...completeData,
-            // Make sure we have the correct image property
-            imagePath: completeData.imagePath || null,
+            imagePaths: completeData.imagePaths || [],
           };
         }
 
@@ -111,8 +117,8 @@ function AddCar() {
           year: completeCarData.year || new Date().getFullYear(),
           price: completeCarData.price ? completeCarData.price.toString() : '',
           mileage: completeCarData.mileage ? completeCarData.mileage.toString() : '',
-          fuel: completeCarData.fuel || 'Gasoline',
-          transmission: completeCarData.transmission || 'Automatic',
+          fuel: completeCarData.fuel || 'Benzin',
+          transmission: completeCarData.transmission || 'Avtomatik',
           color: completeCarData.color || '',
           description: completeCarData.description || '',
           features:
@@ -120,9 +126,6 @@ function AddCar() {
               ? completeCarData.features
               : [''],
         });
-
-        // DO NOT set imagePath as imagePreview - it's already set in fetchCompleteCarData
-        // The imagePreview variable already contains the base64 data
       }
     };
 
@@ -134,16 +137,61 @@ function AddCar() {
     // Create form data object with image info
     const formDataWithImage = {
       ...formData,
-      image,
-      imagePreview,
+      images,
+      imagePreviews,
     };
 
     // Validate using utility function
     const validationErrors = validateCarForm(formDataWithImage, !isEditMode);
     setErrors(validationErrors);
 
-    return !hasErrors(validationErrors);
-  }, [formData, image, imagePreview, isEditMode]);
+    // Mark all fields as touched when submitting
+    const allFields = {
+      brand: true,
+      model: true,
+      year: true,
+      price: true,
+      mileage: true,
+      color: true,
+      transmission: true,
+      fuel: true,
+      description: true,
+      image: true,
+    };
+    setFormTouched(allFields);
+
+    // Check if there are any errors
+    return Object.keys(validationErrors).length === 0;
+  }, [formData, images, imagePreviews, isEditMode]);
+
+  // Generate year options (last 30 years)
+  const yearOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: 30 }, (_, i) => ({
+      value: (currentYear - i).toString(),
+      label: (currentYear - i).toString(),
+    }));
+  }, []);
+
+  // Color options
+  const colorOptions = useMemo(
+    () => [
+      { value: 'Black', label: 'Qara' },
+      { value: 'White', label: 'Ağ' },
+      { value: 'Silver', label: 'Gümüş' },
+      { value: 'Gray', label: 'Boz' },
+      { value: 'Red', label: 'Qırmızı' },
+      { value: 'Blue', label: 'Mavi' },
+      { value: 'Green', label: 'Yaşıl' },
+      { value: 'Yellow', label: 'Sarı' },
+      { value: 'Orange', label: 'Narıncı' },
+      { value: 'Brown', label: 'Qəhvəyi' },
+      { value: 'Beige', label: 'Bej' },
+      { value: 'Gold', label: 'Qızılı' },
+      { value: 'Purple', label: 'Bənövşəyi' },
+    ],
+    []
+  );
 
   // Handle form changes
   const handleChange = useCallback((e) => {
@@ -152,7 +200,10 @@ function AddCar() {
     // Mark field as touched
     setFormTouched((prev) => ({ ...prev, [name]: true }));
 
-    if (name === 'price' || name === 'mileage' || name === 'year') {
+    if (name === 'brand') {
+      // When brand changes, reset model
+      setFormData((prev) => ({ ...prev, brand: value, model: '' }));
+    } else if (name === 'price' || name === 'mileage' || name === 'year') {
       // Only allow numbers
       const numValue = value.replace(/\D/g, '');
       setFormData((prev) => ({ ...prev, [name]: numValue }));
@@ -161,85 +212,125 @@ function AddCar() {
     }
   }, []);
 
-  // Upload image to Firebase Realtime Database
-  const uploadImageToDatabase = async (imageFile, carId) => {
-    if (!imageFile) return null;
-
-    try {
-      // Convert image to base64
-      const base64Image = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = (error) => reject(error);
-        reader.readAsDataURL(imageFile);
-      });
-
-      // Create a unique path for the image
-      const imagePath = `car-images/${currentUser.uid}/${carId || 'temp'}-${Date.now()}`;
-      const databaseRef = ref(database, imagePath);
-
-      // Store the image data and metadata
-      await set(databaseRef, {
-        data: base64Image,
-        contentType: imageFile.type,
-        createdAt: Date.now(),
-        userId: currentUser.uid,
-      });
-
-      // Return the path reference (not the actual data)
-      return imagePath;
-    } catch (error) {
-      console.error('Error uploading image to database:', error);
-      throw new Error('Failed to upload image. Please try again.');
-    }
-  };
-
-  // Delete an image from database
-  const deleteImageFromDatabase = async (imagePath) => {
-    if (!imagePath) return;
-
-    try {
-      const databaseRef = ref(database, imagePath);
-      await remove(databaseRef);
-    } catch (error) {
-      console.warn('Could not delete old image:', error);
-    }
-  };
-
   // Handle image selection
   const handleImageChange = useCallback(async (e) => {
-    const file = e.target.files[0];
+    const files = Array.from(e.target.files);
     setFormTouched((prev) => ({ ...prev, image: true }));
 
-    if (!file) return;
+    if (files.length === 0) return;
 
     try {
-      // Process image using utility
-      const { processedImage, error } = await processImageForUpload(file);
+      const processedImages = [];
+      const newPreviews = [];
 
-      if (error) {
-        setErrors((prev) => ({ ...prev, image: error }));
-        return;
+      for (const file of files) {
+        // Process image using utility
+        const { processedImage, error } = await processImageForUpload(file);
+
+        if (error) {
+          setErrors((prev) => ({ ...prev, image: error }));
+          return;
+        }
+
+        // Store the processed image
+        processedImages.push(processedImage);
+
+        // Create a base64 preview
+        const preview = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(processedImage);
+        });
+        newPreviews.push(preview);
       }
 
-      // Store the processed image for upload
-      setImage(processedImage);
-
-      // Create a base64 preview directly
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64Image = e.target.result;
-        setImagePreview(base64Image);
-      };
-      reader.readAsDataURL(processedImage);
+      // Add new images and previews
+      setImages((prev) => [...prev, ...processedImages]);
+      setImagePreviews((prev) => [...prev, ...newPreviews]);
 
       // Clear any previous errors
       setErrors((prev) => ({ ...prev, image: undefined }));
     } catch (error) {
-      console.error('Error processing image:', error);
-      setErrors((prev) => ({ ...prev, image: 'Error processing image' }));
+      console.error('Error processing images:', error);
+      setErrors((prev) => ({ ...prev, image: 'Error processing images' }));
     }
   }, []);
+
+  // Remove an image
+  const removeImage = useCallback((index) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // Upload images to Firebase Realtime Database
+  const uploadImagesToDatabase = async (imageFiles, carId) => {
+    if (!imageFiles.length) return [];
+
+    try {
+      const imagePaths = [];
+
+      for (const imageFile of imageFiles) {
+        // Convert image to base64
+        const base64Image = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = (error) => reject(error);
+          reader.readAsDataURL(imageFile);
+        });
+
+        // Create a unique path for the image
+        const imagePath = `car-images/${currentUser.uid}/${carId || 'temp'}-${Date.now()}-${
+          imagePaths.length
+        }`;
+        const databaseRef = ref(database, imagePath);
+
+        // Store the image data and metadata
+        await set(databaseRef, {
+          data: base64Image,
+          contentType: imageFile.type,
+          createdAt: Date.now(),
+          userId: currentUser.uid,
+        });
+
+        // Add path to array
+        imagePaths.push(imagePath);
+      }
+
+      return imagePaths;
+    } catch (error) {
+      console.error('Error uploading images to database:', error);
+      throw new Error('Failed to upload images. Please try again.');
+    }
+  };
+
+  // Delete images from database
+  const deleteImagesFromDatabase = async (imagePaths) => {
+    if (!imagePaths.length) return;
+
+    try {
+      // Delete each image and verify deletion
+      await Promise.all(
+        imagePaths.map(async (imagePath) => {
+          if (!imagePath) return;
+          const databaseRef = ref(database, imagePath);
+
+          // Delete the image
+          await remove(databaseRef);
+
+          // Verify deletion
+          const verifyRef = ref(database, imagePath);
+          const verifySnapshot = await get(verifyRef);
+
+          if (verifySnapshot.exists()) {
+            throw new Error(`Failed to delete image at path: ${imagePath}`);
+          }
+        })
+      );
+    } catch (error) {
+      console.error('Error deleting images:', error);
+      throw new Error('Failed to delete images. Please try again.');
+    }
+  };
 
   // Handle feature field changes
   const handleFeatureChange = useCallback((index, value) => {
@@ -272,12 +363,22 @@ function AddCar() {
 
     // Validate entire form
     const isValid = validateForm();
-    if (!isValid) return;
+    if (!isValid) {
+      showError('Please fix the errors in the form before submitting.');
+      return;
+    }
 
     try {
       setLoading(true);
 
-      // Create basic car data without image first
+      // Check if user is authenticated
+      if (!currentUser) {
+        showError('You must be logged in to add a car.');
+        navigate('/login');
+        return;
+      }
+
+      // Create basic car data without images first
       const carData = {
         ...formData,
         features: formData.features.filter((feature) => feature.trim() !== ''),
@@ -288,34 +389,56 @@ function AddCar() {
       };
 
       let carId;
-      let imagePath = null;
+      let imagePaths = [];
 
       if (isEditMode && originalCar && originalCar.id) {
         // If editing, use existing car ID
         carId = originalCar.id;
 
-        // Handle image update
-        if (image) {
-          // Upload new image to database
-          imagePath = await uploadImageToDatabase(image, carId);
+        // Handle image updates
+        if (images.length > 0) {
+          // Upload new images to database
+          imagePaths = await uploadImagesToDatabase(images, carId);
 
-          // If there was an old image, delete it
-          if (originalCar.imagePath) {
-            await deleteImageFromDatabase(originalCar.imagePath);
+          // If there were old images, delete them
+          if (originalCar.imagePaths && originalCar.imagePaths.length > 0) {
+            await deleteImagesFromDatabase(originalCar.imagePaths);
           }
-        } else if (imagePreview && originalCar.imagePath) {
-          // Keep existing image path if no new image
-          imagePath = originalCar.imagePath;
+        } else {
+          // If no new images are uploaded, check if we should keep or delete existing images
+          if (imagePreviews.length === 0) {
+            // If all images were removed, delete the old images
+            if (originalCar.imagePaths && originalCar.imagePaths.length > 0) {
+              await deleteImagesFromDatabase(originalCar.imagePaths);
+            }
+            imagePaths = []; // Set empty array since all images were removed
+          } else {
+            // Keep only the images that are still in imagePreviews
+            const remainingImagePaths = originalCar.imagePaths.filter(
+              (_, index) => imagePreviews[index] !== undefined
+            );
+
+            // Delete the removed images
+            const removedImagePaths = originalCar.imagePaths.filter(
+              (_, index) => imagePreviews[index] === undefined
+            );
+
+            if (removedImagePaths.length > 0) {
+              await deleteImagesFromDatabase(removedImagePaths);
+            }
+
+            imagePaths = remainingImagePaths;
+          }
         }
 
-        // Update car with imagePath
+        // Update car with imagePaths
         const carRef = ref(database, `cars/${carId}`);
 
-        // Add timestamp and imagePath to car data
+        // Add timestamp and imagePaths to car data
         carData.updatedAt = Date.now();
-        carData.imagePath = imagePath;
+        carData.imagePaths = imagePaths;
 
-        // Update the car in Realtime Database
+        // First, update the car in Realtime Database
         await update(carRef, carData);
 
         // Create updated car summary for user's array
@@ -329,7 +452,8 @@ function AddCar() {
           color: formData.color,
           transmission: formData.transmission,
           fuel: formData.fuel,
-          imagePath: imagePath,
+          imagePaths: imagePaths,
+          updatedAt: Date.now(),
         };
 
         // Get current user data
@@ -347,73 +471,111 @@ function AddCar() {
           // Update the user document with the updated cars
           await update(userRef, { cars: userCars });
 
+          // Verify the update was successful
+          const verifyRef = ref(database, `cars/${carId}`);
+          const verifySnapshot = await get(verifyRef);
+
+          if (!verifySnapshot.exists()) {
+            throw new Error('Failed to verify car update');
+          }
+
+          const updatedCar = verifySnapshot.val();
+          if (!updatedCar.imagePaths || updatedCar.imagePaths.length !== imagePaths.length) {
+            throw new Error('Image paths not properly updated');
+          }
+
           // Show success notification
           success(`Successfully updated ${formData.brand} ${formData.model}`);
         } else {
           showError('Could not find user data. Please try again.');
         }
       } else {
-        // Adding a new car
-        // Generate a new car ID
-        const carsRef = ref(database, 'cars');
-        const newCarRef = push(carsRef);
-        carId = newCarRef.key;
+        try {
+          // Adding a new car
+          // Generate a new car ID
+          const carsRef = ref(database, 'cars');
+          const newCarRef = push(carsRef);
+          carId = newCarRef.key;
 
-        // Add timestamp
-        carData.createdAt = Date.now();
+          if (!carId) {
+            throw new Error('Failed to generate car ID');
+          }
 
-        // Upload image if provided
-        if (image) {
-          imagePath = await uploadImageToDatabase(image, carId);
-          carData.imagePath = imagePath;
+          // Add timestamp
+          carData.createdAt = Date.now();
+
+          // Upload images if provided
+          if (images.length > 0) {
+            try {
+              imagePaths = await uploadImagesToDatabase(images, carId);
+              carData.imagePaths = imagePaths;
+            } catch (imageError) {
+              console.error('Error uploading images:', imageError);
+              showError('Failed to upload images. Please try again.');
+              return;
+            }
+          }
+
+          // Save car data to database
+          try {
+            await set(newCarRef, carData);
+          } catch (dbError) {
+            console.error('Error saving car data:', dbError);
+            showError('Failed to save car data. Please try again.');
+            return;
+          }
+
+          // Create car summary for user's cars
+          const carSummary = {
+            id: carId,
+            brand: formData.brand,
+            model: formData.model,
+            year: parseInt(formData.year),
+            price: parseInt(formData.price),
+            mileage: parseInt(formData.mileage),
+            color: formData.color,
+            transmission: formData.transmission,
+            fuel: formData.fuel,
+            imagePaths: imagePaths,
+          };
+
+          // Add the car to user's cars in Realtime Database
+          try {
+            const userRef = ref(database, `users/${currentUser.uid}`);
+            const userSnapshot = await get(userRef);
+
+            if (userSnapshot.exists()) {
+              const userData = userSnapshot.val();
+              const userCars = userData.cars || {};
+
+              // Add new car to user's cars
+              userCars[carId] = carSummary;
+
+              // Update user data
+              await update(userRef, { cars: userCars });
+            } else {
+              // If user document doesn't exist, create it
+              await set(userRef, {
+                name: currentUser.displayName || '',
+                email: currentUser.email || '',
+                createdAt: Date.now(),
+                cars: { [carId]: carSummary },
+              });
+            }
+          } catch (userError) {
+            console.error('Error updating user data:', userError);
+            showError('Failed to update user profile. Please try again.');
+            return;
+          }
+
+          // Show success message
+          success(`Successfully added ${formData.brand} ${formData.model}`);
+          navigate('/profile');
+        } catch (error) {
+          console.error('Error in car creation process:', error);
+          showError('Failed to create car listing. Please try again.');
         }
-
-        // Save car data to database
-        await set(newCarRef, carData);
-
-        // Create car summary for user's cars
-        const carSummary = {
-          id: carId,
-          brand: formData.brand,
-          model: formData.model,
-          year: parseInt(formData.year),
-          price: parseInt(formData.price),
-          mileage: parseInt(formData.mileage),
-          color: formData.color,
-          transmission: formData.transmission,
-          fuel: formData.fuel,
-          imagePath: imagePath,
-        };
-
-        // Add the car to user's cars in Realtime Database
-        const userRef = ref(database, `users/${currentUser.uid}`);
-        const userSnapshot = await get(userRef);
-
-        if (userSnapshot.exists()) {
-          const userData = userSnapshot.val();
-          const userCars = userData.cars || {};
-
-          // Add new car to user's cars
-          userCars[carId] = carSummary;
-
-          // Update user data
-          await update(userRef, { cars: userCars });
-        } else {
-          // If user document doesn't exist, create it
-          await set(userRef, {
-            name: currentUser.displayName || '',
-            email: currentUser.email || '',
-            createdAt: Date.now(),
-            cars: { [carId]: carSummary },
-          });
-        }
-
-        // Show success message
-        success(`Successfully added ${formData.brand} ${formData.model}`);
       }
-
-      // Redirect back to profile page
-      navigate('/profile');
     } catch (err) {
       console.error('Error saving car:', err);
       showError(err.message || 'Error saving car. Please try again.');
@@ -446,200 +608,250 @@ function AddCar() {
     []
   );
 
+  const makeOptions = useMemo(() => carMakes.map((make) => ({ value: make, label: make })), []);
+
+  const modelOptions = useMemo(
+    () => availableModels.map((model) => ({ value: model, label: model })),
+    [availableModels]
+  );
+
   // Flag to check if form has been touched
   const hasBeenTouched = useMemo(() => Object.keys(formTouched).length > 0, [formTouched]);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">{isEditMode ? 'Edit Car' : 'Add New Car'}</h1>
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="bg-white rounded-xl shadow-card p-8">
+          <h1 className="text-3xl font-bold text-neutral-dark mb-8">
+            {isEditMode ? 'Avtomobil Məlumatlarını Düzəliş Et' : 'Yeni Avtomobil Əlavə Et'}
+          </h1>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormGroup label="Brand" error={formTouched.brand && errors.brand}>
-            <TextField
-              name="brand"
-              value={formData.brand}
-              onChange={handleChange}
-              placeholder="e.g. Toyota"
-              required
-            />
-          </FormGroup>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Brand and Model */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormGroup label="Marka" error={formTouched.brand && errors.brand} required>
+                <SelectField
+                  name="brand"
+                  value={formData.brand}
+                  onChange={handleChange}
+                  options={carMakes.map((make) => ({ value: make, label: make }))}
+                  placeholder="Marka seçin"
+                />
+              </FormGroup>
 
-          <FormGroup label="Model" error={formTouched.model && errors.model}>
-            <TextField
-              name="model"
-              value={formData.model}
-              onChange={handleChange}
-              placeholder="e.g. Camry"
-              required
-            />
-          </FormGroup>
-
-          <FormGroup label="Year" error={formTouched.year && errors.year}>
-            <TextField
-              name="year"
-              type="text"
-              value={formData.year}
-              onChange={handleChange}
-              placeholder="e.g. 2022"
-              required
-            />
-          </FormGroup>
-
-          <FormGroup label="Price" error={formTouched.price && errors.price}>
-            <TextField
-              name="price"
-              type="text"
-              value={formData.price}
-              onChange={handleChange}
-              placeholder="e.g. 25000"
-              required
-              leftAddon="$"
-            />
-          </FormGroup>
-
-          <FormGroup label="Mileage" error={formTouched.mileage && errors.mileage}>
-            <TextField
-              name="mileage"
-              type="text"
-              value={formData.mileage}
-              onChange={handleChange}
-              placeholder="e.g. 15000"
-              required
-              rightAddon="miles"
-            />
-          </FormGroup>
-
-          <FormGroup label="Color" error={formTouched.color && errors.color}>
-            <TextField
-              name="color"
-              value={formData.color}
-              onChange={handleChange}
-              placeholder="e.g. Silver"
-              required
-            />
-          </FormGroup>
-
-          <FormGroup label="Transmission" error={formTouched.transmission && errors.transmission}>
-            <SelectField
-              name="transmission"
-              value={formData.transmission}
-              onChange={handleChange}
-              options={transmissionOptions}
-              required
-            />
-          </FormGroup>
-
-          <FormGroup label="Fuel Type" error={formTouched.fuel && errors.fuel}>
-            <SelectField
-              name="fuel"
-              value={formData.fuel}
-              onChange={handleChange}
-              options={fuelOptions}
-              required
-            />
-          </FormGroup>
-        </div>
-
-        <FormGroup label="Car Image" error={formTouched.image && errors.image}>
-          <FileField
-            name="image"
-            onChange={handleImageChange}
-            accept="image/jpeg, image/png, image/webp"
-          />
-          {imagePreview && (
-            <div className="mt-2">
-              <p className="text-sm text-gray-600 mb-2">Preview:</p>
-              <img
-                src={imagePreview}
-                alt="Car preview"
-                className="w-full max-w-md h-auto rounded-lg border border-gray-300"
-              />
+              <FormGroup label="Model" error={formTouched.model && errors.model} required>
+                <SelectField
+                  name="model"
+                  value={formData.model}
+                  onChange={handleChange}
+                  options={availableModels.map((model) => ({ value: model, label: model }))}
+                  placeholder="Model seçin"
+                  disabled={!formData.brand}
+                />
+              </FormGroup>
             </div>
-          )}
-        </FormGroup>
 
-        <FormGroup label="Description" error={formTouched.description && errors.description}>
-          <TextArea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder="Tell us about your car"
-            rows={4}
-            required
-          />
-        </FormGroup>
+            {/* Year, Price, and Mileage */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FormGroup label="İl" error={formTouched.year && errors.year} required>
+                <SelectField
+                  name="year"
+                  value={formData.year}
+                  onChange={handleChange}
+                  options={yearOptions}
+                  placeholder="İl seçin"
+                />
+              </FormGroup>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Features</label>
-          {formData.features.map((feature, index) => (
-            <div key={index} className="flex items-center mb-2">
-              <TextField
-                value={feature}
-                onChange={(e) => handleFeatureChange(index, e.target.value)}
-                placeholder={`Feature ${index + 1}`}
-                className="flex-grow"
-              />
-              <button
-                type="button"
-                onClick={() => removeFeatureField(index)}
-                className="ml-2 p-2 text-red-500 hover:text-red-700"
-                disabled={formData.features.length === 1}
+              <FormGroup label="Qiymət ($)" error={formTouched.price && errors.price} required>
+                <TextField
+                  type="text"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleChange}
+                  placeholder="Qiymət daxil edin"
+                />
+              </FormGroup>
+
+              <FormGroup label="Yürüş (km)" error={formTouched.mileage && errors.mileage} required>
+                <TextField
+                  type="text"
+                  name="mileage"
+                  value={formData.mileage}
+                  onChange={handleChange}
+                  placeholder="Yürüş daxil edin"
+                />
+              </FormGroup>
+            </div>
+
+            {/* Fuel Type, Transmission, and Color */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FormGroup label="Yanacaq Növü" error={formTouched.fuel && errors.fuel} required>
+                <SelectField
+                  name="fuel"
+                  value={formData.fuel}
+                  onChange={handleChange}
+                  options={[
+                    { value: 'Benzin', label: 'Benzin' },
+                    { value: 'Dizel', label: 'Dizel' },
+                    { value: 'Elektrik', label: 'Elektrik' },
+                    { value: 'Hibrid', label: 'Hibrid' },
+                  ]}
+                />
+              </FormGroup>
+
+              <FormGroup
+                label="Sürət Qutusu"
+                error={formTouched.transmission && errors.transmission}
+                required
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
+                <SelectField
+                  name="transmission"
+                  value={formData.transmission}
+                  onChange={handleChange}
+                  options={[
+                    { value: 'Avtomatik', label: 'Avtomatik' },
+                    { value: 'Mexaniki', label: 'Mexaniki' },
+                  ]}
+                />
+              </FormGroup>
+
+              <FormGroup label="Rəng" error={formTouched.color && errors.color} required>
+                <SelectField
+                  name="color"
+                  value={formData.color}
+                  onChange={handleChange}
+                  options={colorOptions}
+                  placeholder="Rəng seçin"
+                />
+              </FormGroup>
             </div>
-          ))}
-          <button
-            type="button"
-            onClick={addFeatureField}
-            className="inline-flex items-center text-blue-600 hover:text-blue-800"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-1"
-              viewBox="0 0 20 20"
-              fill="currentColor"
+
+            {/* Description */}
+            <FormGroup
+              label="Təsvir"
+              error={formTouched.description && errors.description}
+              required
             >
-              <path
-                fillRule="evenodd"
-                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                clipRule="evenodd"
+              <TextArea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Avtomobil haqqında ətraflı məlumat yazın"
+                rows={4}
               />
-            </svg>
-            Add Feature
-          </button>
-        </div>
+            </FormGroup>
 
-        {hasBeenTouched && hasErrors(errors) && (
-          <FormError message="Please fix the errors in the form before submitting." />
-        )}
+            {/* Features */}
+            <FormGroup
+              label="Xüsusiyyətlər"
+              error={formTouched.features && errors.features}
+              required
+            >
+              <div className="space-y-3">
+                {formData.features.map((feature, index) => (
+                  <div key={index} className="flex gap-3">
+                    <TextField
+                      type="text"
+                      value={feature}
+                      onChange={(e) => {
+                        const newFeatures = [...formData.features];
+                        newFeatures[index] = e.target.value;
+                        setFormData((prev) => ({ ...prev, features: newFeatures }));
+                        setFormTouched((prev) => ({ ...prev, features: true }));
+                      }}
+                      placeholder="Xüsusiyyət daxil edin"
+                    />
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newFeatures = formData.features.filter((_, i) => i !== index);
+                          setFormData((prev) => ({ ...prev, features: newFeatures }));
+                        }}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        Sil
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      features: [...prev.features, ''],
+                    }));
+                  }}
+                  className="text-primary hover:text-primary-dark"
+                >
+                  + Xüsusiyyət Əlavə Et
+                </button>
+              </div>
+            </FormGroup>
 
-        <div className="flex justify-between">
-          <Button
-            type="button"
-            onClick={() => navigate('/profile')}
-            variant="outline"
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Saving...' : isEditMode ? 'Update Car' : 'Add Car'}
-          </Button>
+            {/* Images */}
+            <FormGroup
+              label="Şəkillər"
+              error={formTouched.image && errors.image}
+              required={!isEditMode}
+            >
+              <FileField
+                name="images"
+                onChange={handleImageChange}
+                accept="image/*"
+                multiple
+                label="Şəkillər Seçin"
+              />
+              {imagePreviews.length > 0 && (
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </FormGroup>
+
+            {/* Submit Button */}
+            <div className="flex justify-end">
+              <Button type="submit" disabled={loading} className="w-full md:w-auto">
+                {loading
+                  ? isEditMode
+                    ? 'Yadda Saxlanılır...'
+                    : 'Əlavə Edilir...'
+                  : isEditMode
+                  ? 'Yadda Saxla'
+                  : 'Avtomobil Əlavə Et'}
+              </Button>
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

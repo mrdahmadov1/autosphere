@@ -6,9 +6,10 @@ function About() {
         <div className="absolute inset-0 bg-black opacity-50"></div>
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center bg-no-repeat mix-blend-overlay"></div>
         <div className="relative max-w-7xl mx-auto px-8 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">About AutoSphere</h1>
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">AutoSphere Haqqında</h1>
           <p className="text-xl text-white/80 max-w-3xl mx-auto">
-            Your trusted partner in finding the perfect vehicle for your lifestyle and needs.
+            Həyat tərzinizə və ehtiyaclarınıza uyğun mükəmməl avtomobil tapmaqda etibarlı
+            tərəfdaşınız.
           </p>
         </div>
       </section>
@@ -18,21 +19,23 @@ function About() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-neutral-dark mb-6">Our Story</h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-neutral-dark mb-6">
+                Bizim Hekayəmiz
+              </h2>
               <p className="text-lg text-neutral/80 mb-6">
-                Founded in 2005, AutoSphere began as a small family-owned dealership with a simple
-                mission: to provide high-quality vehicles with exceptional customer service.
+                2005-ci ildə yaradılan AutoSphere, sadə bir missiya ilə kiçik bir ailə şirkəti kimi
+                başladı: keyfiyyətli avtomobillər və mükəmməl müştəri xidməti təqdim etmək.
               </p>
               <p className="text-lg text-neutral/80 mb-6">
-                Over the years, we've grown from our humble beginnings into one of the region's most
-                trusted automotive retailers, all while maintaining our core values and commitment
-                to customer satisfaction.
+                İllər ərzində, əsas dəyərlərimizi və müştəri məmnuniyyətinə olan sadiqliyimizi
+                qoruyaraq, sadə başlanğıcımızdan bölgənin ən etibarlı avtomobil satıcılarından
+                birinə çevrildik.
               </p>
               <p className="text-lg text-neutral/80">
-                Our team of experienced professionals is dedicated to helping you find the perfect
-                vehicle that matches your lifestyle, preferences, and budget. We believe in building
-                long-term relationships with our customers based on trust, integrity, and excellent
-                service.
+                Təcrübəli peşəkarlar komandamız, həyat tərzinizə, seçimlərinizə və büdcənizə uyğun
+                mükəmməl avtomobili tapmağınıza kömək etməyə həsr olunub. Biz müştərilərimizlə
+                etibar, dürüstlük və mükəmməl xidmət əsasında uzunmüddətli münasibətlər qurmağa
+                inanırıq.
               </p>
             </div>
             <div className="relative">
@@ -52,7 +55,7 @@ function About() {
       <section className="py-20 px-8 bg-neutral-light">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-neutral-dark mb-16">
-            Our Core Values
+            Əsas Dəyərlərimiz
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             <div className="bg-white p-8 rounded-xl shadow-card text-center">
@@ -72,10 +75,9 @@ function About() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Integrity</h3>
+              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Dürüstlük</h3>
               <p className="text-neutral/70">
-                We believe in transparent, honest communication and ethical business practices in
-                every interaction.
+                Hər bir əlaqədə şəffaf, dürüst ünsiyyət və etik biznes təcrübələrinə inanırıq.
               </p>
             </div>
             <div className="bg-white p-8 rounded-xl shadow-card text-center">
@@ -95,9 +97,10 @@ function About() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Excellence</h3>
+              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Mükəmməllik</h3>
               <p className="text-neutral/70">
-                We strive for excellence in our service, vehicles, and overall customer experience.
+                Xidmətimizdə, avtomobillərimizdə və ümumi müştəri təcrübəsində mükəmməlliyə
+                çalışırıq.
               </p>
             </div>
             <div className="bg-white p-8 rounded-xl shadow-card text-center">
@@ -117,10 +120,10 @@ function About() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Customer Focus</h3>
+              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Müştəri Mərkəzli</h3>
               <p className="text-neutral/70">
-                Our customers are at the heart of everything we do, and their satisfaction is our
-                highest priority.
+                Müştərilərimiz etdiyimiz hər şeyin mərkəzindədir və onların məmnuniyyəti bizim ən
+                yüksək prioritetimizdir.
               </p>
             </div>
           </div>
@@ -133,7 +136,7 @@ function About() {
           <div className="flex flex-col lg:flex-row gap-16">
             <div className="lg:w-1/2">
               <h2 className="text-3xl md:text-4xl font-bold text-neutral-dark mb-8">
-                Why Choose AutoSphere
+                Niyə AutoSphere Seçməlisiniz
               </h2>
               <div className="space-y-6">
                 <div className="flex gap-4">
@@ -156,10 +159,9 @@ function About() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold mb-2 text-neutral-dark">Wide Selection</h3>
+                    <h3 className="text-lg font-bold mb-2 text-neutral-dark">Geniş Seçim</h3>
                     <p className="text-neutral/70">
-                      We offer a diverse range of vehicles to match every need, preference, and
-                      budget.
+                      Hər bir ehtiyaca, seçimə və büdcəyə uyğun müxtəlif avtomobillər təqdim edirik.
                     </p>
                   </div>
                 </div>
@@ -183,10 +185,10 @@ function About() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold mb-2 text-neutral-dark">Quality Assurance</h3>
+                    <h3 className="text-lg font-bold mb-2 text-neutral-dark">Keyfiyyət Zəmanəti</h3>
                     <p className="text-neutral/70">
-                      All our vehicles undergo thorough inspections to ensure they meet our high
-                      standards.
+                      Bütün avtomobillərimiz yüksək standartlarımıza uyğunluğunu təmin etmək üçün
+                      hərtərəfli yoxlamadan keçir.
                     </p>
                   </div>
                 </div>
@@ -211,11 +213,11 @@ function About() {
                   </div>
                   <div>
                     <h3 className="text-lg font-bold mb-2 text-neutral-dark">
-                      Competitive Pricing
+                      Rəqabətli Qiymətlər
                     </h3>
                     <p className="text-neutral/70">
-                      We offer fair, transparent pricing with flexible financing options to fit your
-                      budget.
+                      Büdcənizə uyğun olmaq üçün ədalətli, şəffaf qiymətləndirmə və çevik maliyyə
+                      seçimləri təqdim edirik.
                     </p>
                   </div>
                 </div>
@@ -239,10 +241,10 @@ function About() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold mb-2 text-neutral-dark">Expert Support</h3>
+                    <h3 className="text-lg font-bold mb-2 text-neutral-dark">Peşəkar Dəstək</h3>
                     <p className="text-neutral/70">
-                      Our knowledgeable staff is here to assist you throughout your car buying
-                      journey.
+                      Bilikli əməkdaşlarımız avtomobil alma səfəriniz boyunca sizə kömək etmək üçün
+                      buradadır.
                     </p>
                   </div>
                 </div>
@@ -277,25 +279,26 @@ function About() {
       {/* Team */}
       <section className="py-20 px-8 bg-neutral-light">
         <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-neutral-dark mb-6">Meet Our Team</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-neutral-dark mb-6">
+            Komandamızla Tanış Olun
+          </h2>
           <p className="text-lg text-neutral/80 max-w-2xl mx-auto mb-16">
-            Our dedicated team of professionals is committed to providing you with the best car
-            buying experience.
+            Peşəkar komandamız sizə ən yaxşı avtomobil alma təcrübəsini təqdim etməyə həsr olunub.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="bg-white rounded-xl shadow-card overflow-hidden group">
               <div className="h-64 overflow-hidden">
                 <img
                   src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1000&auto=format&fit=crop"
-                  alt="Team member"
+                  alt="Komanda üzvü"
                   className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-bold text-neutral-dark">John Davis</h3>
-                <p className="text-primary font-medium mb-3">General Manager</p>
+                <h3 className="text-xl font-bold text-neutral-dark">Cənnət Dəmir</h3>
+                <p className="text-primary font-medium mb-3">Baş Menecer</p>
                 <p className="text-neutral/70 text-sm">
-                  With over 15 years of experience in the automotive industry.
+                  Avtomobil sənayesində 15 ildən çox təcrübə.
                 </p>
               </div>
             </div>
@@ -303,15 +306,15 @@ function About() {
               <div className="h-64 overflow-hidden">
                 <img
                   src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1000&auto=format&fit=crop"
-                  alt="Team member"
+                  alt="Komanda üzvü"
                   className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-bold text-neutral-dark">Sarah Johnson</h3>
-                <p className="text-primary font-medium mb-3">Sales Director</p>
+                <h3 className="text-xl font-bold text-neutral-dark">Səbinə Cəfərova</h3>
+                <p className="text-primary font-medium mb-3">Satış Direktoru</p>
                 <p className="text-neutral/70 text-sm">
-                  Dedicated to finding the perfect vehicle match for every customer.
+                  Hər müştəri üçün mükəmməl avtomobil tapmağa həsr olunub.
                 </p>
               </div>
             </div>
@@ -319,15 +322,15 @@ function About() {
               <div className="h-64 overflow-hidden">
                 <img
                   src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1000&auto=format&fit=crop"
-                  alt="Team member"
+                  alt="Komanda üzvü"
                   className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-bold text-neutral-dark">Michael Chen</h3>
-                <p className="text-primary font-medium mb-3">Financial Advisor</p>
+                <h3 className="text-xl font-bold text-neutral-dark">Məhəmməd Əliyev</h3>
+                <p className="text-primary font-medium mb-3">Maliyyə Məsləhətçisi</p>
                 <p className="text-neutral/70 text-sm">
-                  Expert in creating tailored financing solutions for our customers.
+                  Müştərilərimiz üçün fərdi maliyyə həlləri yaratmaqda mütəxəssis.
                 </p>
               </div>
             </div>
@@ -335,15 +338,15 @@ function About() {
               <div className="h-64 overflow-hidden">
                 <img
                   src="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1000&auto=format&fit=crop"
-                  alt="Team member"
+                  alt="Komanda üzvü"
                   className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-bold text-neutral-dark">Emily Rodriguez</h3>
-                <p className="text-primary font-medium mb-3">Customer Service</p>
+                <h3 className="text-xl font-bold text-neutral-dark">Əminə Məmmədova</h3>
+                <p className="text-primary font-medium mb-3">Müştəri Xidməti</p>
                 <p className="text-neutral/70 text-sm">
-                  Committed to ensuring an exceptional experience for all clients.
+                  Bütün müştərilərə mükəmməl xidmət göstərməyə həsr olunub.
                 </p>
               </div>
             </div>
@@ -354,19 +357,22 @@ function About() {
       {/* Call to Action */}
       <section className="py-20 px-8 bg-primary text-white">
         <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Find Your Perfect Car?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            Mükəmməl Avtomobilinizi Tapmağa Hazırsınız?
+          </h2>
           <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">
-            Visit our showroom today or contact us to schedule a test drive.
+            Bu gün salonumuzu ziyarət edin və ya test sürüşü təyin etmək üçün bizimlə əlaqə
+            saxlayın.
           </p>
           <div className="flex flex-col md:flex-row gap-4 justify-center">
             <a href="/contact" className="btn bg-white text-primary hover:bg-neutral-light">
-              Contact Us
+              Bizimlə Əlaqə
             </a>
             <a
               href="/"
               className="btn border-2 border-white text-white hover:bg-white hover:text-primary"
             >
-              Browse Inventory
+              Avtomobillərə Bax
             </a>
           </div>
         </div>
