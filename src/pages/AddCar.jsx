@@ -5,6 +5,7 @@ import { useNotification } from '../context/NotificationContext';
 import { database, ref, set, get, remove, push, update } from '../firebase/config';
 import { processImageForUpload } from '../utils/imageUtils';
 import { validateCarForm, hasErrors } from '../utils/validationUtils';
+import { carMakesAndModels, carMakes } from '../data/carMakesAndModels';
 import {
   FormGroup,
   TextField,
@@ -13,6 +14,7 @@ import {
   FileField,
   Button,
   FormError,
+  RangeSlider,
 } from '../components/ui/FormElements';
 
 function AddCar() {
@@ -29,8 +31,8 @@ function AddCar() {
     features: [''],
   });
 
-  const [image, setImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
+  const [images, setImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [isEditMode, setIsEditMode] = useState(false);
@@ -41,6 +43,11 @@ function AddCar() {
   const { success, error: showError } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Get available models based on selected brand
+  const availableModels = useMemo(() => {
+    return formData.brand ? carMakesAndModels[formData.brand] || [] : [];
+  }, [formData.brand]);
 
   // Check if we're in edit mode
   useEffect(() => {
@@ -55,33 +62,34 @@ function AddCar() {
         if (snapshot.exists()) {
           const completeData = snapshot.val();
 
-          // If we have an imagePath, fetch the image from the database
-          if (completeData.imagePath) {
+          // If we have imagePaths, fetch the images from the database
+          if (completeData.imagePaths && completeData.imagePaths.length > 0) {
             try {
-              const imageRef = ref(database, completeData.imagePath);
-              const imageSnapshot = await get(imageRef);
-
-              if (imageSnapshot.exists()) {
-                const imageData = imageSnapshot.val();
-                if (imageData && imageData.data) {
-                  // Use the base64 data directly for the preview
-                  setImagePreview(imageData.data);
+              const imagePromises = completeData.imagePaths.map(async (imagePath) => {
+                const imageRef = ref(database, imagePath);
+                const imageSnapshot = await get(imageRef);
+                if (imageSnapshot.exists()) {
+                  const imageData = imageSnapshot.val();
+                  if (imageData && imageData.data) {
+                    return imageData.data;
+                  }
                 }
-              }
+                return null;
+              });
+
+              const imageResults = await Promise.all(imagePromises);
+              const validImages = imageResults.filter((data) => data !== null);
+              setImagePreviews(validImages);
             } catch (err) {
-              console.error('Error fetching image from database:', err);
+              console.error('Error fetching images from database:', err);
             }
-          } else if (completeData.image) {
-            // For backward compatibility
-            setImagePreview(completeData.image);
           }
 
           // Return full car data
           return {
             id: carData.id,
             ...completeData,
-            // Make sure we have the correct image property
-            imagePath: completeData.imagePath || null,
+            imagePaths: completeData.imagePaths || [],
           };
         }
 
@@ -120,9 +128,6 @@ function AddCar() {
               ? completeCarData.features
               : [''],
         });
-
-        // DO NOT set imagePath as imagePreview - it's already set in fetchCompleteCarData
-        // The imagePreview variable already contains the base64 data
       }
     };
 
@@ -134,16 +139,61 @@ function AddCar() {
     // Create form data object with image info
     const formDataWithImage = {
       ...formData,
-      image,
-      imagePreview,
+      images,
+      imagePreviews,
     };
 
     // Validate using utility function
     const validationErrors = validateCarForm(formDataWithImage, !isEditMode);
     setErrors(validationErrors);
 
-    return !hasErrors(validationErrors);
-  }, [formData, image, imagePreview, isEditMode]);
+    // Mark all fields as touched when submitting
+    const allFields = {
+      brand: true,
+      model: true,
+      year: true,
+      price: true,
+      mileage: true,
+      color: true,
+      transmission: true,
+      fuel: true,
+      description: true,
+      image: true,
+    };
+    setFormTouched(allFields);
+
+    // Check if there are any errors
+    return Object.keys(validationErrors).length === 0;
+  }, [formData, images, imagePreviews, isEditMode]);
+
+  // Generate year options (last 30 years)
+  const yearOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: 30 }, (_, i) => ({
+      value: (currentYear - i).toString(),
+      label: (currentYear - i).toString(),
+    }));
+  }, []);
+
+  // Color options
+  const colorOptions = useMemo(
+    () => [
+      { value: 'Black', label: 'Black' },
+      { value: 'White', label: 'White' },
+      { value: 'Silver', label: 'Silver' },
+      { value: 'Gray', label: 'Gray' },
+      { value: 'Red', label: 'Red' },
+      { value: 'Blue', label: 'Blue' },
+      { value: 'Green', label: 'Green' },
+      { value: 'Yellow', label: 'Yellow' },
+      { value: 'Orange', label: 'Orange' },
+      { value: 'Brown', label: 'Brown' },
+      { value: 'Beige', label: 'Beige' },
+      { value: 'Gold', label: 'Gold' },
+      { value: 'Purple', label: 'Purple' },
+    ],
+    []
+  );
 
   // Handle form changes
   const handleChange = useCallback((e) => {
@@ -152,7 +202,10 @@ function AddCar() {
     // Mark field as touched
     setFormTouched((prev) => ({ ...prev, [name]: true }));
 
-    if (name === 'price' || name === 'mileage' || name === 'year') {
+    if (name === 'brand') {
+      // When brand changes, reset model
+      setFormData((prev) => ({ ...prev, brand: value, model: '' }));
+    } else if (name === 'price' || name === 'mileage' || name === 'year') {
       // Only allow numbers
       const numValue = value.replace(/\D/g, '');
       setFormData((prev) => ({ ...prev, [name]: numValue }));
@@ -161,85 +214,125 @@ function AddCar() {
     }
   }, []);
 
-  // Upload image to Firebase Realtime Database
-  const uploadImageToDatabase = async (imageFile, carId) => {
-    if (!imageFile) return null;
-
-    try {
-      // Convert image to base64
-      const base64Image = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = (error) => reject(error);
-        reader.readAsDataURL(imageFile);
-      });
-
-      // Create a unique path for the image
-      const imagePath = `car-images/${currentUser.uid}/${carId || 'temp'}-${Date.now()}`;
-      const databaseRef = ref(database, imagePath);
-
-      // Store the image data and metadata
-      await set(databaseRef, {
-        data: base64Image,
-        contentType: imageFile.type,
-        createdAt: Date.now(),
-        userId: currentUser.uid,
-      });
-
-      // Return the path reference (not the actual data)
-      return imagePath;
-    } catch (error) {
-      console.error('Error uploading image to database:', error);
-      throw new Error('Failed to upload image. Please try again.');
-    }
-  };
-
-  // Delete an image from database
-  const deleteImageFromDatabase = async (imagePath) => {
-    if (!imagePath) return;
-
-    try {
-      const databaseRef = ref(database, imagePath);
-      await remove(databaseRef);
-    } catch (error) {
-      console.warn('Could not delete old image:', error);
-    }
-  };
-
   // Handle image selection
   const handleImageChange = useCallback(async (e) => {
-    const file = e.target.files[0];
+    const files = Array.from(e.target.files);
     setFormTouched((prev) => ({ ...prev, image: true }));
 
-    if (!file) return;
+    if (files.length === 0) return;
 
     try {
-      // Process image using utility
-      const { processedImage, error } = await processImageForUpload(file);
+      const processedImages = [];
+      const newPreviews = [];
 
-      if (error) {
-        setErrors((prev) => ({ ...prev, image: error }));
-        return;
+      for (const file of files) {
+        // Process image using utility
+        const { processedImage, error } = await processImageForUpload(file);
+
+        if (error) {
+          setErrors((prev) => ({ ...prev, image: error }));
+          return;
+        }
+
+        // Store the processed image
+        processedImages.push(processedImage);
+
+        // Create a base64 preview
+        const preview = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(processedImage);
+        });
+        newPreviews.push(preview);
       }
 
-      // Store the processed image for upload
-      setImage(processedImage);
-
-      // Create a base64 preview directly
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64Image = e.target.result;
-        setImagePreview(base64Image);
-      };
-      reader.readAsDataURL(processedImage);
+      // Add new images and previews
+      setImages((prev) => [...prev, ...processedImages]);
+      setImagePreviews((prev) => [...prev, ...newPreviews]);
 
       // Clear any previous errors
       setErrors((prev) => ({ ...prev, image: undefined }));
     } catch (error) {
-      console.error('Error processing image:', error);
-      setErrors((prev) => ({ ...prev, image: 'Error processing image' }));
+      console.error('Error processing images:', error);
+      setErrors((prev) => ({ ...prev, image: 'Error processing images' }));
     }
   }, []);
+
+  // Remove an image
+  const removeImage = useCallback((index) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // Upload images to Firebase Realtime Database
+  const uploadImagesToDatabase = async (imageFiles, carId) => {
+    if (!imageFiles.length) return [];
+
+    try {
+      const imagePaths = [];
+
+      for (const imageFile of imageFiles) {
+        // Convert image to base64
+        const base64Image = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = (error) => reject(error);
+          reader.readAsDataURL(imageFile);
+        });
+
+        // Create a unique path for the image
+        const imagePath = `car-images/${currentUser.uid}/${carId || 'temp'}-${Date.now()}-${
+          imagePaths.length
+        }`;
+        const databaseRef = ref(database, imagePath);
+
+        // Store the image data and metadata
+        await set(databaseRef, {
+          data: base64Image,
+          contentType: imageFile.type,
+          createdAt: Date.now(),
+          userId: currentUser.uid,
+        });
+
+        // Add path to array
+        imagePaths.push(imagePath);
+      }
+
+      return imagePaths;
+    } catch (error) {
+      console.error('Error uploading images to database:', error);
+      throw new Error('Failed to upload images. Please try again.');
+    }
+  };
+
+  // Delete images from database
+  const deleteImagesFromDatabase = async (imagePaths) => {
+    if (!imagePaths.length) return;
+
+    try {
+      // Delete each image and verify deletion
+      await Promise.all(
+        imagePaths.map(async (imagePath) => {
+          if (!imagePath) return;
+          const databaseRef = ref(database, imagePath);
+
+          // Delete the image
+          await remove(databaseRef);
+
+          // Verify deletion
+          const verifyRef = ref(database, imagePath);
+          const verifySnapshot = await get(verifyRef);
+
+          if (verifySnapshot.exists()) {
+            throw new Error(`Failed to delete image at path: ${imagePath}`);
+          }
+        })
+      );
+    } catch (error) {
+      console.error('Error deleting images:', error);
+      throw new Error('Failed to delete images. Please try again.');
+    }
+  };
 
   // Handle feature field changes
   const handleFeatureChange = useCallback((index, value) => {
@@ -272,12 +365,22 @@ function AddCar() {
 
     // Validate entire form
     const isValid = validateForm();
-    if (!isValid) return;
+    if (!isValid) {
+      showError('Please fix the errors in the form before submitting.');
+      return;
+    }
 
     try {
       setLoading(true);
 
-      // Create basic car data without image first
+      // Check if user is authenticated
+      if (!currentUser) {
+        showError('You must be logged in to add a car.');
+        navigate('/login');
+        return;
+      }
+
+      // Create basic car data without images first
       const carData = {
         ...formData,
         features: formData.features.filter((feature) => feature.trim() !== ''),
@@ -288,34 +391,56 @@ function AddCar() {
       };
 
       let carId;
-      let imagePath = null;
+      let imagePaths = [];
 
       if (isEditMode && originalCar && originalCar.id) {
         // If editing, use existing car ID
         carId = originalCar.id;
 
-        // Handle image update
-        if (image) {
-          // Upload new image to database
-          imagePath = await uploadImageToDatabase(image, carId);
+        // Handle image updates
+        if (images.length > 0) {
+          // Upload new images to database
+          imagePaths = await uploadImagesToDatabase(images, carId);
 
-          // If there was an old image, delete it
-          if (originalCar.imagePath) {
-            await deleteImageFromDatabase(originalCar.imagePath);
+          // If there were old images, delete them
+          if (originalCar.imagePaths && originalCar.imagePaths.length > 0) {
+            await deleteImagesFromDatabase(originalCar.imagePaths);
           }
-        } else if (imagePreview && originalCar.imagePath) {
-          // Keep existing image path if no new image
-          imagePath = originalCar.imagePath;
+        } else {
+          // If no new images are uploaded, check if we should keep or delete existing images
+          if (imagePreviews.length === 0) {
+            // If all images were removed, delete the old images
+            if (originalCar.imagePaths && originalCar.imagePaths.length > 0) {
+              await deleteImagesFromDatabase(originalCar.imagePaths);
+            }
+            imagePaths = []; // Set empty array since all images were removed
+          } else {
+            // Keep only the images that are still in imagePreviews
+            const remainingImagePaths = originalCar.imagePaths.filter(
+              (_, index) => imagePreviews[index] !== undefined
+            );
+
+            // Delete the removed images
+            const removedImagePaths = originalCar.imagePaths.filter(
+              (_, index) => imagePreviews[index] === undefined
+            );
+
+            if (removedImagePaths.length > 0) {
+              await deleteImagesFromDatabase(removedImagePaths);
+            }
+
+            imagePaths = remainingImagePaths;
+          }
         }
 
-        // Update car with imagePath
+        // Update car with imagePaths
         const carRef = ref(database, `cars/${carId}`);
 
-        // Add timestamp and imagePath to car data
+        // Add timestamp and imagePaths to car data
         carData.updatedAt = Date.now();
-        carData.imagePath = imagePath;
+        carData.imagePaths = imagePaths;
 
-        // Update the car in Realtime Database
+        // First, update the car in Realtime Database
         await update(carRef, carData);
 
         // Create updated car summary for user's array
@@ -329,7 +454,8 @@ function AddCar() {
           color: formData.color,
           transmission: formData.transmission,
           fuel: formData.fuel,
-          imagePath: imagePath,
+          imagePaths: imagePaths,
+          updatedAt: Date.now(),
         };
 
         // Get current user data
@@ -347,73 +473,111 @@ function AddCar() {
           // Update the user document with the updated cars
           await update(userRef, { cars: userCars });
 
+          // Verify the update was successful
+          const verifyRef = ref(database, `cars/${carId}`);
+          const verifySnapshot = await get(verifyRef);
+
+          if (!verifySnapshot.exists()) {
+            throw new Error('Failed to verify car update');
+          }
+
+          const updatedCar = verifySnapshot.val();
+          if (!updatedCar.imagePaths || updatedCar.imagePaths.length !== imagePaths.length) {
+            throw new Error('Image paths not properly updated');
+          }
+
           // Show success notification
           success(`Successfully updated ${formData.brand} ${formData.model}`);
         } else {
           showError('Could not find user data. Please try again.');
         }
       } else {
-        // Adding a new car
-        // Generate a new car ID
-        const carsRef = ref(database, 'cars');
-        const newCarRef = push(carsRef);
-        carId = newCarRef.key;
+        try {
+          // Adding a new car
+          // Generate a new car ID
+          const carsRef = ref(database, 'cars');
+          const newCarRef = push(carsRef);
+          carId = newCarRef.key;
 
-        // Add timestamp
-        carData.createdAt = Date.now();
+          if (!carId) {
+            throw new Error('Failed to generate car ID');
+          }
 
-        // Upload image if provided
-        if (image) {
-          imagePath = await uploadImageToDatabase(image, carId);
-          carData.imagePath = imagePath;
+          // Add timestamp
+          carData.createdAt = Date.now();
+
+          // Upload images if provided
+          if (images.length > 0) {
+            try {
+              imagePaths = await uploadImagesToDatabase(images, carId);
+              carData.imagePaths = imagePaths;
+            } catch (imageError) {
+              console.error('Error uploading images:', imageError);
+              showError('Failed to upload images. Please try again.');
+              return;
+            }
+          }
+
+          // Save car data to database
+          try {
+            await set(newCarRef, carData);
+          } catch (dbError) {
+            console.error('Error saving car data:', dbError);
+            showError('Failed to save car data. Please try again.');
+            return;
+          }
+
+          // Create car summary for user's cars
+          const carSummary = {
+            id: carId,
+            brand: formData.brand,
+            model: formData.model,
+            year: parseInt(formData.year),
+            price: parseInt(formData.price),
+            mileage: parseInt(formData.mileage),
+            color: formData.color,
+            transmission: formData.transmission,
+            fuel: formData.fuel,
+            imagePaths: imagePaths,
+          };
+
+          // Add the car to user's cars in Realtime Database
+          try {
+            const userRef = ref(database, `users/${currentUser.uid}`);
+            const userSnapshot = await get(userRef);
+
+            if (userSnapshot.exists()) {
+              const userData = userSnapshot.val();
+              const userCars = userData.cars || {};
+
+              // Add new car to user's cars
+              userCars[carId] = carSummary;
+
+              // Update user data
+              await update(userRef, { cars: userCars });
+            } else {
+              // If user document doesn't exist, create it
+              await set(userRef, {
+                name: currentUser.displayName || '',
+                email: currentUser.email || '',
+                createdAt: Date.now(),
+                cars: { [carId]: carSummary },
+              });
+            }
+          } catch (userError) {
+            console.error('Error updating user data:', userError);
+            showError('Failed to update user profile. Please try again.');
+            return;
+          }
+
+          // Show success message
+          success(`Successfully added ${formData.brand} ${formData.model}`);
+          navigate('/profile');
+        } catch (error) {
+          console.error('Error in car creation process:', error);
+          showError('Failed to create car listing. Please try again.');
         }
-
-        // Save car data to database
-        await set(newCarRef, carData);
-
-        // Create car summary for user's cars
-        const carSummary = {
-          id: carId,
-          brand: formData.brand,
-          model: formData.model,
-          year: parseInt(formData.year),
-          price: parseInt(formData.price),
-          mileage: parseInt(formData.mileage),
-          color: formData.color,
-          transmission: formData.transmission,
-          fuel: formData.fuel,
-          imagePath: imagePath,
-        };
-
-        // Add the car to user's cars in Realtime Database
-        const userRef = ref(database, `users/${currentUser.uid}`);
-        const userSnapshot = await get(userRef);
-
-        if (userSnapshot.exists()) {
-          const userData = userSnapshot.val();
-          const userCars = userData.cars || {};
-
-          // Add new car to user's cars
-          userCars[carId] = carSummary;
-
-          // Update user data
-          await update(userRef, { cars: userCars });
-        } else {
-          // If user document doesn't exist, create it
-          await set(userRef, {
-            name: currentUser.displayName || '',
-            email: currentUser.email || '',
-            createdAt: Date.now(),
-            cars: { [carId]: carSummary },
-          });
-        }
-
-        // Show success message
-        success(`Successfully added ${formData.brand} ${formData.model}`);
       }
-
-      // Redirect back to profile page
-      navigate('/profile');
     } catch (err) {
       console.error('Error saving car:', err);
       showError(err.message || 'Error saving car. Please try again.');
@@ -446,6 +610,13 @@ function AddCar() {
     []
   );
 
+  const makeOptions = useMemo(() => carMakes.map((make) => ({ value: make, label: make })), []);
+
+  const modelOptions = useMemo(
+    () => availableModels.map((model) => ({ value: model, label: model })),
+    [availableModels]
+  );
+
   // Flag to check if form has been touched
   const hasBeenTouched = useMemo(() => Object.keys(formTouched).length > 0, [formTouched]);
 
@@ -455,34 +626,37 @@ function AddCar() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormGroup label="Brand" error={formTouched.brand && errors.brand}>
-            <TextField
+          <FormGroup label="Make" error={formTouched.brand && errors.brand}>
+            <SelectField
               name="brand"
               value={formData.brand}
               onChange={handleChange}
-              placeholder="e.g. Toyota"
+              options={makeOptions}
               required
+              placeholder="Select the car manufacturer (e.g., Toyota, Honda, Ford)"
             />
           </FormGroup>
 
           <FormGroup label="Model" error={formTouched.model && errors.model}>
-            <TextField
+            <SelectField
               name="model"
               value={formData.model}
               onChange={handleChange}
-              placeholder="e.g. Camry"
+              options={modelOptions}
               required
+              placeholder="Select the car model (e.g., Camry, Civic, F-150)"
+              disabled={!formData.brand}
             />
           </FormGroup>
 
           <FormGroup label="Year" error={formTouched.year && errors.year}>
-            <TextField
+            <SelectField
               name="year"
-              type="text"
-              value={formData.year}
+              value={formData.year.toString()}
               onChange={handleChange}
-              placeholder="e.g. 2022"
+              options={yearOptions}
               required
+              placeholder="Select the manufacturing year"
             />
           </FormGroup>
 
@@ -492,9 +666,10 @@ function AddCar() {
               type="text"
               value={formData.price}
               onChange={handleChange}
-              placeholder="e.g. 25000"
+              placeholder="Enter the car price (e.g., 25000)"
               required
               leftAddon="$"
+              rightAddon="USD"
             />
           </FormGroup>
 
@@ -504,19 +679,20 @@ function AddCar() {
               type="text"
               value={formData.mileage}
               onChange={handleChange}
-              placeholder="e.g. 15000"
+              placeholder="Enter the car mileage (e.g., 15000)"
               required
               rightAddon="miles"
             />
           </FormGroup>
 
           <FormGroup label="Color" error={formTouched.color && errors.color}>
-            <TextField
+            <SelectField
               name="color"
               value={formData.color}
               onChange={handleChange}
-              placeholder="e.g. Silver"
+              options={colorOptions}
               required
+              placeholder="Select the car color"
             />
           </FormGroup>
 
@@ -527,6 +703,7 @@ function AddCar() {
               onChange={handleChange}
               options={transmissionOptions}
               required
+              placeholder="Select the transmission type"
             />
           </FormGroup>
 
@@ -537,26 +714,53 @@ function AddCar() {
               onChange={handleChange}
               options={fuelOptions}
               required
+              placeholder="Select the fuel type"
             />
           </FormGroup>
         </div>
 
-        <FormGroup label="Car Image" error={formTouched.image && errors.image}>
-          <FileField
-            name="image"
-            onChange={handleImageChange}
-            accept="image/jpeg, image/png, image/webp"
-          />
-          {imagePreview && (
-            <div className="mt-2">
-              <p className="text-sm text-gray-600 mb-2">Preview:</p>
-              <img
-                src={imagePreview}
-                alt="Car preview"
-                className="w-full max-w-md h-auto rounded-lg border border-gray-300"
-              />
-            </div>
-          )}
+        <FormGroup label="Car Images" error={formTouched.image && errors.image}>
+          <div className="space-y-4">
+            <FileField
+              name="image"
+              onChange={handleImageChange}
+              accept="image/jpeg, image/png, image/webp"
+              placeholder="Upload car photos (you can select multiple)"
+              multiple
+            />
+            {imagePreviews.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={preview}
+                      alt={`Car preview ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove image"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </FormGroup>
 
         <FormGroup label="Description" error={formTouched.description && errors.description}>
@@ -564,7 +768,7 @@ function AddCar() {
             name="description"
             value={formData.description}
             onChange={handleChange}
-            placeholder="Tell us about your car"
+            placeholder="Describe your car's condition, features, and any notable details"
             rows={4}
             required
           />
@@ -577,7 +781,7 @@ function AddCar() {
               <TextField
                 value={feature}
                 onChange={(e) => handleFeatureChange(index, e.target.value)}
-                placeholder={`Feature ${index + 1}`}
+                placeholder={`Enter feature ${index + 1} (e.g., Leather seats, Navigation system)`}
                 className="flex-grow"
               />
               <button

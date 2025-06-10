@@ -13,7 +13,32 @@ const CarCard = memo(({ car, onEdit, onDelete }) => {
   // Fetch image from the Realtime Database if we have a path
   useEffect(() => {
     const fetchCarImage = async () => {
-      if (car.imagePath) {
+      if (car.imagePaths && car.imagePaths.length > 0) {
+        try {
+          setLoading(true);
+          // Use the first image path as the cover photo
+          const imageRef = ref(database, car.imagePaths[0]);
+          const snapshot = await get(imageRef);
+
+          if (snapshot.exists()) {
+            const imageData = snapshot.val();
+            if (imageData && imageData.data) {
+              // Base64 data is stored in the 'data' field
+              setImageUrl(imageData.data);
+            } else {
+              setImageUrl(getPlaceholder('car'));
+            }
+          } else {
+            setImageUrl(getPlaceholder('car'));
+          }
+        } catch (err) {
+          console.error('Error fetching car image:', err);
+          setImageUrl(getPlaceholder('error'));
+        } finally {
+          setLoading(false);
+        }
+      } else if (car.imagePath) {
+        // For backward compatibility with old format
         try {
           setLoading(true);
           const imageRef = ref(database, car.imagePath);
@@ -22,7 +47,6 @@ const CarCard = memo(({ car, onEdit, onDelete }) => {
           if (snapshot.exists()) {
             const imageData = snapshot.val();
             if (imageData && imageData.data) {
-              // Base64 data is stored in the 'data' field
               setImageUrl(imageData.data);
             } else {
               setImageUrl(getPlaceholder('car'));
@@ -133,26 +157,30 @@ function Profile() {
     }
   };
 
-  // Function to handle editing a car - memoized to avoid recreation on each render
+  // Function to handle editing a car
   const handleEditCar = useCallback(
-    async (car) => {
-      try {
-        // If we're editing from a user profile car summary, make sure we have the full car data
-        if (car.id) {
-          // Always navigate to edit form, but let AddCar handle fetching complete data
-          navigate(`/add-car`, { state: { editMode: true, carData: car } });
-        } else {
-          // If somehow we don't have an ID, show an error
-          setErrorMessage('Cannot edit this car listing - missing ID.');
-          error('Cannot edit this car listing - missing ID.');
-        }
-      } catch (err) {
-        setErrorMessage('Failed to prepare car data for editing.');
-        error('Failed to prepare car data for editing.');
-        console.error(err);
-      }
+    (car) => {
+      navigate('/add-car', {
+        state: {
+          editMode: true,
+          carData: {
+            id: car.id,
+            brand: car.brand,
+            model: car.model,
+            year: car.year,
+            price: car.price,
+            mileage: car.mileage,
+            color: car.color,
+            transmission: car.transmission,
+            fuel: car.fuel,
+            description: car.description,
+            features: car.features || [],
+            imagePaths: car.imagePaths || [],
+          },
+        },
+      });
     },
-    [navigate, error]
+    [navigate]
   );
 
   // Function to initiate car deletion with confirmation

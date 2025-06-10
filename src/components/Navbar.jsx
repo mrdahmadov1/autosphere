@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 
 function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
 
   const navItems = [
     { name: 'Home', path: '/' },
@@ -15,6 +16,14 @@ function Navbar() {
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleAddCar = () => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+    navigate('/add-car');
   };
 
   return (
@@ -46,6 +55,7 @@ function Navbar() {
             <div className="flex items-center space-x-6">
               <Link
                 to="/add-car"
+                onClick={handleAddCar}
                 className="text-white bg-accent hover:bg-accent/80 px-4 py-2 rounded-lg font-medium transition-colors duration-300"
               >
                 Add Car
@@ -74,13 +84,13 @@ function Navbar() {
                 to="/login"
                 className="text-white hover:text-accent transition-colors duration-300"
               >
-                Log In
+                Login
               </Link>
               <Link
                 to="/register"
                 className="text-white bg-accent hover:bg-accent/80 px-4 py-2 rounded-lg font-medium transition-colors duration-300"
               >
-                Sign Up
+                Register
               </Link>
             </div>
           )}
@@ -145,8 +155,12 @@ function Navbar() {
                 </Link>
                 <Link
                   to="/add-car"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleAddCar();
+                    setMobileMenuOpen(false);
+                  }}
                   className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
-                  onClick={() => setMobileMenuOpen(false)}
                 >
                   Add Car
                 </Link>
@@ -158,14 +172,14 @@ function Navbar() {
                   className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Log In
+                  Login
                 </Link>
                 <Link
                   to="/register"
-                  className="py-3 text-neutral-dark font-medium text-lg"
+                  className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Sign Up
+                  Register
                 </Link>
               </>
             )}

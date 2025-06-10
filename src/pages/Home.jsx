@@ -1,86 +1,91 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { database, ref, get } from '../firebase/config';
-import { carsData } from '../data/cars'; // Keeping as fallback
 import PropTypes from 'prop-types';
 import { getPlaceholder } from '../utils/imageUtils';
 
 function Home() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterBrand, setFilterBrand] = useState('');
-  const [filteredCars, setFilteredCars] = useState([]);
   const [allCars, setAllCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [filters, setFilters] = useState({
+    brand: '',
+    model: '',
+    year: '',
+    color: '',
+    minPrice: '',
+    maxPrice: '',
+  });
+
+  const uniqueBrands = useMemo(() => {
+    const brands = [...new Set(allCars.map((car) => car.brand))];
+    return brands.sort();
+  }, [allCars]);
+
+  const uniqueModels = useMemo(() => {
+    const models = [...new Set(allCars.map((car) => car.model))];
+    return models.sort();
+  }, [allCars]);
 
   useEffect(() => {
-    async function fetchCars() {
+    const fetchCars = async () => {
       try {
+        setLoading(true);
         const carsRef = ref(database, 'cars');
         const snapshot = await get(carsRef);
-
         if (snapshot.exists()) {
           const carsData = snapshot.val();
-          const carsArray = Object.keys(carsData).map((key) => ({
-            id: key,
-            ...carsData[key],
+          console.log('Fetched cars data:', carsData); // Debug log
+          const carsArray = Object.entries(carsData).map(([id, data]) => ({
+            id,
+            ...data,
           }));
-
-          // Sort by createdAt timestamp (newest first)
-          const sortedCars = carsArray.sort((a, b) => b.createdAt - a.createdAt);
-
-          setAllCars(sortedCars);
-          setFilteredCars(sortedCars);
+          console.log('Processed cars array:', carsArray); // Debug log
+          setAllCars(carsArray);
         } else {
-          // Fallback to static data if no cars in database
-          setAllCars(carsData);
-          setFilteredCars(carsData);
+          console.log('No cars found in database'); // Debug log
         }
-      } catch (error) {
-        console.error('Error fetching cars:', error);
-        setError('Failed to load cars. Using default data.');
-        // Fallback to static data on error
-        setAllCars(carsData);
-        setFilteredCars(carsData);
+      } catch (err) {
+        console.error('Error fetching cars:', err);
+        setError('Failed to load cars.');
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     fetchCars();
   }, []);
 
-  const uniqueBrands = [...new Set(allCars.map((car) => car.brand))];
-
-  const handleSearch = (e) => {
-    const term = e.target.value;
-    setSearchTerm(term);
-    filterCars(term, filterBrand);
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const handleBrandFilter = (e) => {
-    const brand = e.target.value;
-    setFilterBrand(brand);
-    filterCars(searchTerm, brand);
-  };
+  const filteredCars = useMemo(() => {
+    return allCars.filter((car) => {
+      const matchesBrand =
+        !filters.brand || car.brand.toLowerCase().includes(filters.brand.toLowerCase());
+      const matchesModel =
+        !filters.model || car.model.toLowerCase().includes(filters.model.toLowerCase());
+      const matchesYear = !filters.year || car.year.toString() === filters.year;
+      const matchesColor =
+        !filters.color || car.color.toLowerCase() === filters.color.toLowerCase();
+      const matchesMinPrice = !filters.minPrice || car.price >= Number(filters.minPrice);
+      const matchesMaxPrice = !filters.maxPrice || car.price <= Number(filters.maxPrice);
 
-  const filterCars = (term, brand) => {
-    let filtered = allCars;
-
-    if (term) {
-      filtered = filtered.filter(
-        (car) =>
-          car.brand.toLowerCase().includes(term.toLowerCase()) ||
-          car.model.toLowerCase().includes(term.toLowerCase())
+      return (
+        matchesBrand &&
+        matchesModel &&
+        matchesYear &&
+        matchesColor &&
+        matchesMinPrice &&
+        matchesMaxPrice
       );
-    }
-
-    if (brand) {
-      filtered = filtered.filter((car) => car.brand === brand);
-    }
-
-    setFilteredCars(filtered);
-  };
+    });
+  }, [allCars, filters]);
 
   return (
     <div>
@@ -96,26 +101,171 @@ function Home() {
             Discover our extensive collection of premium vehicles. Quality, reliability, and style
             all in one place.
           </p>
-          <div className="flex flex-col md:flex-row gap-6 justify-center max-w-3xl mx-auto">
-            <input
-              type="text"
-              placeholder="Search by brand or model..."
-              value={searchTerm}
-              onChange={handleSearch}
-              className="py-4 px-6 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-primary shadow-md w-full"
-            />
-            <select
-              value={filterBrand}
-              onChange={handleBrandFilter}
-              className="py-4 px-6 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-primary shadow-md bg-white w-full md:w-64"
-            >
-              <option value="">All Brands</option>
-              {uniqueBrands.map((brand) => (
-                <option key={brand} value={brand}>
-                  {brand}
-                </option>
-              ))}
-            </select>
+          <div className="mb-8">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-xl p-8 border border-white/20">
+              <h2 className="text-2xl font-bold mb-6 text-white">Find Your Perfect Car</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="relative">
+                  <label className="block text-sm font-medium text-white/90 mb-2">Brand</label>
+                  <select
+                    name="brand"
+                    value={filters.brand}
+                    onChange={handleFilterChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
+                  >
+                    <option value="" className="bg-neutral-dark">
+                      All Brands
+                    </option>
+                    {uniqueBrands.map((brand) => (
+                      <option key={brand} value={brand} className="bg-neutral-dark">
+                        {brand}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="relative">
+                  <label className="block text-sm font-medium text-white/90 mb-2">Model</label>
+                  <select
+                    name="model"
+                    value={filters.model}
+                    onChange={handleFilterChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
+                  >
+                    <option value="" className="bg-neutral-dark">
+                      All Models
+                    </option>
+                    {uniqueModels.map((model) => (
+                      <option key={model} value={model} className="bg-neutral-dark">
+                        {model}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="relative">
+                  <label className="block text-sm font-medium text-white/90 mb-2">Year</label>
+                  <input
+                    type="number"
+                    name="year"
+                    value={filters.year}
+                    onChange={handleFilterChange}
+                    placeholder="Enter year (e.g., 2020)"
+                    min="1900"
+                    max={new Date().getFullYear()}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
+                  />
+                </div>
+                <div className="relative">
+                  <label className="block text-sm font-medium text-white/90 mb-2">Color</label>
+                  <select
+                    name="color"
+                    value={filters.color}
+                    onChange={handleFilterChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
+                  >
+                    <option value="" className="bg-neutral-dark">
+                      All Colors
+                    </option>
+                    <option value="black" className="bg-neutral-dark">
+                      Black
+                    </option>
+                    <option value="white" className="bg-neutral-dark">
+                      White
+                    </option>
+                    <option value="silver" className="bg-neutral-dark">
+                      Silver
+                    </option>
+                    <option value="gray" className="bg-neutral-dark">
+                      Gray
+                    </option>
+                    <option value="red" className="bg-neutral-dark">
+                      Red
+                    </option>
+                    <option value="blue" className="bg-neutral-dark">
+                      Blue
+                    </option>
+                    <option value="green" className="bg-neutral-dark">
+                      Green
+                    </option>
+                    <option value="yellow" className="bg-neutral-dark">
+                      Yellow
+                    </option>
+                    <option value="orange" className="bg-neutral-dark">
+                      Orange
+                    </option>
+                    <option value="brown" className="bg-neutral-dark">
+                      Brown
+                    </option>
+                  </select>
+                </div>
+                <div className="relative">
+                  <label className="block text-sm font-medium text-white/90 mb-2">
+                    Min Price ($)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      name="minPrice"
+                      value={filters.minPrice}
+                      onChange={handleFilterChange}
+                      placeholder="Min price"
+                      min="0"
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50">
+                      USD
+                    </span>
+                  </div>
+                </div>
+                <div className="relative">
+                  <label className="block text-sm font-medium text-white/90 mb-2">
+                    Max Price ($)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      name="maxPrice"
+                      value={filters.maxPrice}
+                      onChange={handleFilterChange}
+                      placeholder="Max price"
+                      min="0"
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50">
+                      USD
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() =>
+                    setFilters({
+                      brand: '',
+                      model: '',
+                      year: '',
+                      color: '',
+                      minPrice: '',
+                      maxPrice: '',
+                    })
+                  }
+                  className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all duration-200 flex items-center gap-2"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Clear Filters
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -148,15 +298,7 @@ function Home() {
               {filteredCars.map((car) => (
                 <div key={car.id} className="card group">
                   <div className="relative overflow-hidden h-60">
-                    {car.imagePath ? (
-                      <CarImage car={car} />
-                    ) : (
-                      <img
-                        src={car.image || getPlaceholder('car')}
-                        alt={`${car.brand} ${car.model}`}
-                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                      />
-                    )}
+                    <CarImage car={car} />
                     <div className="absolute top-4 right-4 bg-accent text-neutral-dark font-bold py-1 px-3 rounded-full">
                       {car.year}
                     </div>
@@ -327,8 +469,26 @@ function CarImage({ car }) {
 
   useEffect(() => {
     const loadImage = async () => {
-      if (car.imagePath) {
-        try {
+      try {
+        setLoading(true);
+        // First check for imagePaths array
+        if (car.imagePaths && car.imagePaths.length > 0) {
+          const imageRef = ref(database, car.imagePaths[0]);
+          const snapshot = await get(imageRef);
+
+          if (snapshot.exists()) {
+            const imageData = snapshot.val();
+            if (imageData && imageData.data) {
+              setImageUrl(imageData.data);
+            } else {
+              setImageUrl(getPlaceholder('default'));
+            }
+          } else {
+            setImageUrl(getPlaceholder('default'));
+          }
+        }
+        // Fallback to imagePath for backward compatibility
+        else if (car.imagePath) {
           const imageRef = ref(database, car.imagePath);
           const snapshot = await get(imageRef);
 
@@ -342,20 +502,23 @@ function CarImage({ car }) {
           } else {
             setImageUrl(getPlaceholder('default'));
           }
-        } catch (err) {
-          console.error('Error loading image:', err);
-          setImageUrl(getPlaceholder('error'));
-        } finally {
-          setLoading(false);
         }
-      } else {
-        setImageUrl(getPlaceholder('car'));
+        // Last resort: use car.image if available
+        else if (car.image) {
+          setImageUrl(car.image);
+        } else {
+          setImageUrl(getPlaceholder('car'));
+        }
+      } catch (err) {
+        console.error('Error loading image:', err);
+        setImageUrl(getPlaceholder('error'));
+      } finally {
         setLoading(false);
       }
     };
 
     loadImage();
-  }, [car.imagePath]);
+  }, [car]);
 
   return (
     <>
@@ -377,7 +540,9 @@ function CarImage({ car }) {
 
 CarImage.propTypes = {
   car: PropTypes.shape({
+    imagePaths: PropTypes.arrayOf(PropTypes.string),
     imagePath: PropTypes.string,
+    image: PropTypes.string,
     brand: PropTypes.string.isRequired,
     model: PropTypes.string.isRequired,
   }).isRequired,

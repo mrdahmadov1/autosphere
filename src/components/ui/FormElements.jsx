@@ -373,3 +373,55 @@ FormGroup.propTypes = {
   className: PropTypes.string,
   children: PropTypes.node,
 };
+
+export const RangeSlider = ({
+  name,
+  value,
+  onChange,
+  min = 0,
+  max = 100,
+  step = 1,
+  required = false,
+  disabled = false,
+  placeholder,
+  leftAddon,
+  rightAddon,
+  className = '',
+}) => {
+  const handleChange = (e) => {
+    const newValue = parseInt(e.target.value);
+    onChange(newValue);
+  };
+
+  return (
+    <div className="relative">
+      {leftAddon && (
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">{leftAddon}</div>
+      )}
+      <input
+        type="range"
+        name={name}
+        value={value || min}
+        onChange={handleChange}
+        min={min}
+        max={max}
+        step={step}
+        required={required}
+        disabled={disabled}
+        placeholder={placeholder}
+        className={`
+          w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer
+          ${leftAddon ? 'pl-12' : ''}
+          ${rightAddon ? 'pr-12' : ''}
+          ${className}
+        `}
+      />
+      {rightAddon && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">{rightAddon}</div>
+      )}
+      <div className="mt-2 text-sm text-gray-500">
+        {value ? `${value.toLocaleString()}` : placeholder}
+      </div>
+    </div>
+  );
+};
