@@ -9,9 +9,9 @@ function Navbar() {
   const navigate = useNavigate();
 
   const navItems = [
-    { name: 'Home', path: '/' },
-    { name: 'About', path: '/about' },
-    { name: 'Contact', path: '/contact' },
+    { name: 'Ana Səhifə', path: '/' },
+    { name: 'Haqqımızda', path: '/about' },
+    { name: 'Əlaqə', path: '/contact' },
   ];
 
   const toggleMobileMenu = () => {
@@ -58,7 +58,7 @@ function Navbar() {
                 onClick={handleAddCar}
                 className="text-white bg-accent hover:bg-accent/80 px-4 py-2 rounded-lg font-medium transition-colors duration-300"
               >
-                Add Car
+                Avtomobil Əlavə Et
               </Link>
               <Link to="/profile" className="text-white flex items-center hover:text-accent">
                 <svg
@@ -75,7 +75,7 @@ function Navbar() {
                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                   />
                 </svg>
-                {currentUser.displayName || 'Profile'}
+                {currentUser.displayName || 'Profil'}
               </Link>
             </div>
           ) : (
@@ -84,13 +84,13 @@ function Navbar() {
                 to="/login"
                 className="text-white hover:text-accent transition-colors duration-300"
               >
-                Login
+                Daxil Ol
               </Link>
               <Link
                 to="/register"
                 className="text-white bg-accent hover:bg-accent/80 px-4 py-2 rounded-lg font-medium transition-colors duration-300"
               >
-                Register
+                Qeydiyyat
               </Link>
             </div>
           )}
@@ -151,7 +151,7 @@ function Navbar() {
                   className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  My Profile
+                  Mənim Profilim
                 </Link>
                 <Link
                   to="/add-car"
@@ -162,7 +162,7 @@ function Navbar() {
                   }}
                   className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
                 >
-                  Add Car
+                  Avtomobil Əlavə Et
                 </Link>
               </>
             ) : (
@@ -172,14 +172,14 @@ function Navbar() {
                   className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Login
+                  Daxil Ol
                 </Link>
                 <Link
                   to="/register"
                   className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Register
+                  Qeydiyyat
                 </Link>
               </>
             )}

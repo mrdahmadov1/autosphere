@@ -96,13 +96,13 @@ const CarCard = memo(({ car, onEdit, onDelete }) => {
             className="text-neutral-dark hover:text-primary transition-colors"
             onClick={() => onEdit(car)}
           >
-            Edit
+            Düzəliş Et
           </button>
           <button
             className="text-red-500 hover:text-red-700 transition-colors"
             onClick={() => onDelete(car)}
           >
-            Delete
+            Sil
           </button>
         </div>
       </div>
@@ -134,8 +134,8 @@ function Profile() {
       const profileData = await getUserProfile();
       setUserData(profileData);
     } catch (err) {
-      setErrorMessage('Failed to load profile data.');
-      error('Failed to load profile data.');
+      setErrorMessage('Profil məlumatları yüklənə bilmədi.');
+      error('Profil məlumatları yüklənə bilmədi.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -151,8 +151,8 @@ function Profile() {
       await logout();
       navigate('/login');
     } catch (err) {
-      setErrorMessage('Failed to log out.');
-      error('Failed to log out.');
+      setErrorMessage('Çıxış edilə bilmədi.');
+      error('Çıxış edilə bilmədi.');
       console.error(err);
     }
   };
@@ -234,12 +234,12 @@ function Profile() {
       await fetchUserData();
 
       // Show success message and reset the delete state
-      success('Car successfully deleted.');
+      success('Avtomobil uğurla silindi.');
       setShowDeleteConfirm(false);
       setCarToDelete(null);
     } catch (err) {
-      setErrorMessage('Failed to delete car.');
-      error('Failed to delete car: ' + err.message);
+      setErrorMessage('Avtomobil silinə bilmədi.');
+      error('Avtomobil silinə bilmədi: ' + err.message);
       console.error(err);
     } finally {
       setIsDeleting(false);
@@ -252,139 +252,218 @@ function Profile() {
     setCarToDelete(null);
   }, []);
 
-  // Convert cars object to array for rendering
-  const carsArray = useMemo(() => {
-    if (!userData || !userData.cars) return [];
-    return Object.values(userData.cars);
-  }, [userData]);
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col md:flex-row justify-between items-start mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Your Profile</h1>
-          {userData && (
-            <div className="mb-4">
-              <p className="text-lg">
-                <span className="font-medium">Name:</span> {userData.name}
-              </p>
-              <p className="text-lg">
-                <span className="font-medium">Email:</span> {userData.email}
-              </p>
-              {userData.phone && (
-                <p className="text-lg">
-                  <span className="font-medium">Phone:</span> {userData.phone}
-                </p>
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="w-8 h-8 border-t-2 border-primary border-solid rounded-full animate-spin"></div>
+          </div>
+        ) : errorMessage ? (
+          <div className="text-center py-8">
+            <p className="text-red-500 mb-4">{errorMessage}</p>
+            <button
+              onClick={fetchUserData}
+              className="text-primary hover:text-primary-dark transition-colors"
+            >
+              Yenidən cəhd edin
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Profile Header */}
+            <div className="bg-white rounded-xl shadow-card p-8">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-neutral-dark mb-2">Profil</h1>
+                  <div className="space-y-2">
+                    <p className="text-neutral/70 flex items-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-2 text-primary"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                      </svg>
+                      {userData?.email}
+                    </p>
+                    {userData?.name && (
+                      <p className="text-neutral/70 flex items-center">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 mr-2 text-primary"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        {userData.name}
+                      </p>
+                    )}
+                    {userData?.phone && (
+                      <p className="text-neutral/70 flex items-center">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 mr-2 text-primary"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                        </svg>
+                        {userData.phone}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => navigate('/add-car')}
+                    className="btn-primary flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Yeni Avtomobil Əlavə Et
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="btn-outline flex items-center gap-2 px-6 py-3 border-2 border-neutral-300 hover:border-neutral-400 text-neutral-700 hover:text-neutral-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V7.414l-5-5H3zm7 8a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L12 14.586V11z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Çıxış
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* User's Cars */}
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-neutral-dark">Mənim Avtomobillərim</h2>
+                <span className="text-neutral/70">
+                  {userData?.cars ? Object.keys(userData.cars).length : 0} avtomobil
+                </span>
+              </div>
+              {userData?.cars && Object.keys(userData.cars).length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Object.values(userData.cars).map((car) => (
+                    <CarCard
+                      key={car.id}
+                      car={car}
+                      onEdit={handleEditCar}
+                      onDelete={initiateDeleteCar}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 bg-white rounded-xl shadow-card">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-8 w-8 text-primary"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                      <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-1h3.05a2.5 2.5 0 014.9 0H19a1 1 0 001-1v-6a1 1 0 00-.293-.707l-2-2A1 1 0 0017 4H3z" />
+                    </svg>
+                  </div>
+                  <p className="text-neutral/70 mb-4">Hələ heç bir avtomobil əlavə etməmisiniz.</p>
+                  <button
+                    onClick={() => navigate('/add-car')}
+                    className="btn-primary flex items-center gap-2 mx-auto"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    İlk Avtomobilinizi Əlavə Edin
+                  </button>
+                </div>
               )}
             </div>
-          )}
-        </div>
-        <div className="flex flex-col space-y-2 mt-4 md:mt-0">
-          <button
-            onClick={() => navigate('/add-car')}
-            className="bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded-lg transition-colors"
-          >
-            Add New Car
-          </button>
-          <button
-            onClick={handleLogout}
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg transition-colors"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
+          </div>
+        )}
 
-      {errorMessage && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
-          <span className="block sm:inline">{errorMessage}</span>
-          <button
-            className="absolute top-0 bottom-0 right-0 px-4 py-3"
-            onClick={() => setErrorMessage('')}
-          >
-            <span className="text-xl">&times;</span>
-          </button>
-        </div>
-      )}
-
-      <h2 className="text-2xl font-bold mb-6">Your Cars</h2>
-
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="w-12 h-12 border-t-4 border-primary border-solid rounded-full animate-spin"></div>
-        </div>
-      ) : carsArray.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {carsArray.map((car) => (
-            <CarCard key={car.id} car={car} onEdit={handleEditCar} onDelete={initiateDeleteCar} />
-          ))}
-        </div>
-      ) : (
-        <div className="bg-blue-50 text-blue-800 p-6 rounded-lg">
-          <p className="text-lg mb-4">You don't have any cars listed yet.</p>
-          <button
-            onClick={() => navigate('/add-car')}
-            className="bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded-lg transition-colors"
-          >
-            Add Your First Car
-          </button>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold mb-4">Confirm Deletion</h3>
-            <p className="mb-6">
-              Are you sure you want to delete {carToDelete?.brand} {carToDelete?.model} (
-              {carToDelete?.year})? This action cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={cancelDeleteCar}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
-                disabled={isDeleting}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDeleteCar}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center"
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <>
-                    <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Deleting...
-                  </>
-                ) : (
-                  'Delete'
-                )}
-              </button>
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-red-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-neutral-dark mb-4 text-center">
+                Avtomobili Sil
+              </h3>
+              <p className="text-neutral/70 mb-6 text-center">
+                Bu avtomobili silmək istədiyinizə əminsiniz? Bu əməliyyat geri alına bilməz.
+              </p>
+              <div className="flex justify-center gap-4">
+                <button onClick={cancelDeleteCar} className="btn-outline" disabled={isDeleting}>
+                  Ləğv Et
+                </button>
+                <button onClick={confirmDeleteCar} className="btn-danger" disabled={isDeleting}>
+                  {isDeleting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Silinir...
+                    </div>
+                  ) : (
+                    'Sil'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

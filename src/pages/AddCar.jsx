@@ -4,7 +4,7 @@ import { useAuth } from '../context/useAuth';
 import { useNotification } from '../context/NotificationContext';
 import { database, ref, set, get, remove, push, update } from '../firebase/config';
 import { processImageForUpload } from '../utils/imageUtils';
-import { validateCarForm, hasErrors } from '../utils/validationUtils';
+import { validateCarForm } from '../utils/validationUtils';
 import { carMakesAndModels, carMakes } from '../data/carMakesAndModels';
 import {
   FormGroup,
@@ -13,8 +13,6 @@ import {
   SelectField,
   FileField,
   Button,
-  FormError,
-  RangeSlider,
 } from '../components/ui/FormElements';
 
 function AddCar() {
@@ -24,8 +22,8 @@ function AddCar() {
     year: new Date().getFullYear(),
     price: '',
     mileage: '',
-    fuel: 'Gasoline',
-    transmission: 'Automatic',
+    fuel: 'Benzin',
+    transmission: 'Avtomatik',
     color: '',
     description: '',
     features: [''],
@@ -119,8 +117,8 @@ function AddCar() {
           year: completeCarData.year || new Date().getFullYear(),
           price: completeCarData.price ? completeCarData.price.toString() : '',
           mileage: completeCarData.mileage ? completeCarData.mileage.toString() : '',
-          fuel: completeCarData.fuel || 'Gasoline',
-          transmission: completeCarData.transmission || 'Automatic',
+          fuel: completeCarData.fuel || 'Benzin',
+          transmission: completeCarData.transmission || 'Avtomatik',
           color: completeCarData.color || '',
           description: completeCarData.description || '',
           features:
@@ -178,19 +176,19 @@ function AddCar() {
   // Color options
   const colorOptions = useMemo(
     () => [
-      { value: 'Black', label: 'Black' },
-      { value: 'White', label: 'White' },
-      { value: 'Silver', label: 'Silver' },
-      { value: 'Gray', label: 'Gray' },
-      { value: 'Red', label: 'Red' },
-      { value: 'Blue', label: 'Blue' },
-      { value: 'Green', label: 'Green' },
-      { value: 'Yellow', label: 'Yellow' },
-      { value: 'Orange', label: 'Orange' },
-      { value: 'Brown', label: 'Brown' },
-      { value: 'Beige', label: 'Beige' },
-      { value: 'Gold', label: 'Gold' },
-      { value: 'Purple', label: 'Purple' },
+      { value: 'Black', label: 'Qara' },
+      { value: 'White', label: 'Ağ' },
+      { value: 'Silver', label: 'Gümüş' },
+      { value: 'Gray', label: 'Boz' },
+      { value: 'Red', label: 'Qırmızı' },
+      { value: 'Blue', label: 'Mavi' },
+      { value: 'Green', label: 'Yaşıl' },
+      { value: 'Yellow', label: 'Sarı' },
+      { value: 'Orange', label: 'Narıncı' },
+      { value: 'Brown', label: 'Qəhvəyi' },
+      { value: 'Beige', label: 'Bej' },
+      { value: 'Gold', label: 'Qızılı' },
+      { value: 'Purple', label: 'Bənövşəyi' },
     ],
     []
   );
@@ -621,229 +619,239 @@ function AddCar() {
   const hasBeenTouched = useMemo(() => Object.keys(formTouched).length > 0, [formTouched]);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">{isEditMode ? 'Edit Car' : 'Add New Car'}</h1>
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="bg-white rounded-xl shadow-card p-8">
+          <h1 className="text-3xl font-bold text-neutral-dark mb-8">
+            {isEditMode ? 'Avtomobil Məlumatlarını Düzəliş Et' : 'Yeni Avtomobil Əlavə Et'}
+          </h1>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormGroup label="Make" error={formTouched.brand && errors.brand}>
-            <SelectField
-              name="brand"
-              value={formData.brand}
-              onChange={handleChange}
-              options={makeOptions}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Brand and Model */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormGroup label="Marka" error={formTouched.brand && errors.brand} required>
+                <SelectField
+                  name="brand"
+                  value={formData.brand}
+                  onChange={handleChange}
+                  options={carMakes.map((make) => ({ value: make, label: make }))}
+                  placeholder="Marka seçin"
+                />
+              </FormGroup>
+
+              <FormGroup label="Model" error={formTouched.model && errors.model} required>
+                <SelectField
+                  name="model"
+                  value={formData.model}
+                  onChange={handleChange}
+                  options={availableModels.map((model) => ({ value: model, label: model }))}
+                  placeholder="Model seçin"
+                  disabled={!formData.brand}
+                />
+              </FormGroup>
+            </div>
+
+            {/* Year, Price, and Mileage */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FormGroup label="İl" error={formTouched.year && errors.year} required>
+                <SelectField
+                  name="year"
+                  value={formData.year}
+                  onChange={handleChange}
+                  options={yearOptions}
+                  placeholder="İl seçin"
+                />
+              </FormGroup>
+
+              <FormGroup label="Qiymət ($)" error={formTouched.price && errors.price} required>
+                <TextField
+                  type="text"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleChange}
+                  placeholder="Qiymət daxil edin"
+                />
+              </FormGroup>
+
+              <FormGroup label="Yürüş (km)" error={formTouched.mileage && errors.mileage} required>
+                <TextField
+                  type="text"
+                  name="mileage"
+                  value={formData.mileage}
+                  onChange={handleChange}
+                  placeholder="Yürüş daxil edin"
+                />
+              </FormGroup>
+            </div>
+
+            {/* Fuel Type, Transmission, and Color */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FormGroup label="Yanacaq Növü" error={formTouched.fuel && errors.fuel} required>
+                <SelectField
+                  name="fuel"
+                  value={formData.fuel}
+                  onChange={handleChange}
+                  options={[
+                    { value: 'Benzin', label: 'Benzin' },
+                    { value: 'Dizel', label: 'Dizel' },
+                    { value: 'Elektrik', label: 'Elektrik' },
+                    { value: 'Hibrid', label: 'Hibrid' },
+                  ]}
+                />
+              </FormGroup>
+
+              <FormGroup
+                label="Sürət Qutusu"
+                error={formTouched.transmission && errors.transmission}
+                required
+              >
+                <SelectField
+                  name="transmission"
+                  value={formData.transmission}
+                  onChange={handleChange}
+                  options={[
+                    { value: 'Avtomatik', label: 'Avtomatik' },
+                    { value: 'Mexaniki', label: 'Mexaniki' },
+                  ]}
+                />
+              </FormGroup>
+
+              <FormGroup label="Rəng" error={formTouched.color && errors.color} required>
+                <SelectField
+                  name="color"
+                  value={formData.color}
+                  onChange={handleChange}
+                  options={colorOptions}
+                  placeholder="Rəng seçin"
+                />
+              </FormGroup>
+            </div>
+
+            {/* Description */}
+            <FormGroup
+              label="Təsvir"
+              error={formTouched.description && errors.description}
               required
-              placeholder="Select the car manufacturer (e.g., Toyota, Honda, Ford)"
-            />
-          </FormGroup>
+            >
+              <TextArea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Avtomobil haqqında ətraflı məlumat yazın"
+                rows={4}
+              />
+            </FormGroup>
 
-          <FormGroup label="Model" error={formTouched.model && errors.model}>
-            <SelectField
-              name="model"
-              value={formData.model}
-              onChange={handleChange}
-              options={modelOptions}
+            {/* Features */}
+            <FormGroup
+              label="Xüsusiyyətlər"
+              error={formTouched.features && errors.features}
               required
-              placeholder="Select the car model (e.g., Camry, Civic, F-150)"
-              disabled={!formData.brand}
-            />
-          </FormGroup>
-
-          <FormGroup label="Year" error={formTouched.year && errors.year}>
-            <SelectField
-              name="year"
-              value={formData.year.toString()}
-              onChange={handleChange}
-              options={yearOptions}
-              required
-              placeholder="Select the manufacturing year"
-            />
-          </FormGroup>
-
-          <FormGroup label="Price" error={formTouched.price && errors.price}>
-            <TextField
-              name="price"
-              type="text"
-              value={formData.price}
-              onChange={handleChange}
-              placeholder="Enter the car price (e.g., 25000)"
-              required
-              leftAddon="$"
-              rightAddon="USD"
-            />
-          </FormGroup>
-
-          <FormGroup label="Mileage" error={formTouched.mileage && errors.mileage}>
-            <TextField
-              name="mileage"
-              type="text"
-              value={formData.mileage}
-              onChange={handleChange}
-              placeholder="Enter the car mileage (e.g., 15000)"
-              required
-              rightAddon="miles"
-            />
-          </FormGroup>
-
-          <FormGroup label="Color" error={formTouched.color && errors.color}>
-            <SelectField
-              name="color"
-              value={formData.color}
-              onChange={handleChange}
-              options={colorOptions}
-              required
-              placeholder="Select the car color"
-            />
-          </FormGroup>
-
-          <FormGroup label="Transmission" error={formTouched.transmission && errors.transmission}>
-            <SelectField
-              name="transmission"
-              value={formData.transmission}
-              onChange={handleChange}
-              options={transmissionOptions}
-              required
-              placeholder="Select the transmission type"
-            />
-          </FormGroup>
-
-          <FormGroup label="Fuel Type" error={formTouched.fuel && errors.fuel}>
-            <SelectField
-              name="fuel"
-              value={formData.fuel}
-              onChange={handleChange}
-              options={fuelOptions}
-              required
-              placeholder="Select the fuel type"
-            />
-          </FormGroup>
-        </div>
-
-        <FormGroup label="Car Images" error={formTouched.image && errors.image}>
-          <div className="space-y-4">
-            <FileField
-              name="image"
-              onChange={handleImageChange}
-              accept="image/jpeg, image/png, image/webp"
-              placeholder="Upload car photos (you can select multiple)"
-              multiple
-            />
-            {imagePreviews.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
-                {imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={preview}
-                      alt={`Car preview ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg border border-gray-300"
+            >
+              <div className="space-y-3">
+                {formData.features.map((feature, index) => (
+                  <div key={index} className="flex gap-3">
+                    <TextField
+                      type="text"
+                      value={feature}
+                      onChange={(e) => {
+                        const newFeatures = [...formData.features];
+                        newFeatures[index] = e.target.value;
+                        setFormData((prev) => ({ ...prev, features: newFeatures }));
+                        setFormTouched((prev) => ({ ...prev, features: true }));
+                      }}
+                      placeholder="Xüsusiyyət daxil edin"
                     />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Remove image"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newFeatures = formData.features.filter((_, i) => i !== index);
+                          setFormData((prev) => ({ ...prev, features: newFeatures }));
+                        }}
+                        className="text-red-500 hover:text-red-700"
                       >
-                        <path
-                          fillRule="evenodd"
-                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
+                        Sil
+                      </button>
+                    )}
                   </div>
                 ))}
-              </div>
-            )}
-          </div>
-        </FormGroup>
-
-        <FormGroup label="Description" error={formTouched.description && errors.description}>
-          <TextArea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder="Describe your car's condition, features, and any notable details"
-            rows={4}
-            required
-          />
-        </FormGroup>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Features</label>
-          {formData.features.map((feature, index) => (
-            <div key={index} className="flex items-center mb-2">
-              <TextField
-                value={feature}
-                onChange={(e) => handleFeatureChange(index, e.target.value)}
-                placeholder={`Enter feature ${index + 1} (e.g., Leather seats, Navigation system)`}
-                className="flex-grow"
-              />
-              <button
-                type="button"
-                onClick={() => removeFeatureField(index)}
-                className="ml-2 p-2 text-red-500 hover:text-red-700"
-                disabled={formData.features.length === 1}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      features: [...prev.features, ''],
+                    }));
+                  }}
+                  className="text-primary hover:text-primary-dark"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={addFeatureField}
-            className="inline-flex items-center text-blue-600 hover:text-blue-800"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-1"
-              viewBox="0 0 20 20"
-              fill="currentColor"
+                  + Xüsusiyyət Əlavə Et
+                </button>
+              </div>
+            </FormGroup>
+
+            {/* Images */}
+            <FormGroup
+              label="Şəkillər"
+              error={formTouched.image && errors.image}
+              required={!isEditMode}
             >
-              <path
-                fillRule="evenodd"
-                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                clipRule="evenodd"
+              <FileField
+                name="images"
+                onChange={handleImageChange}
+                accept="image/*"
+                multiple
+                label="Şəkillər Seçin"
               />
-            </svg>
-            Add Feature
-          </button>
-        </div>
+              {imagePreviews.length > 0 && (
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </FormGroup>
 
-        {hasBeenTouched && hasErrors(errors) && (
-          <FormError message="Please fix the errors in the form before submitting." />
-        )}
-
-        <div className="flex justify-between">
-          <Button
-            type="button"
-            onClick={() => navigate('/profile')}
-            variant="outline"
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Saving...' : isEditMode ? 'Update Car' : 'Add Car'}
-          </Button>
+            {/* Submit Button */}
+            <div className="flex justify-end">
+              <Button type="submit" disabled={loading} className="w-full md:w-auto">
+                {loading
+                  ? isEditMode
+                    ? 'Yadda Saxlanılır...'
+                    : 'Əlavə Edilir...'
+                  : isEditMode
+                  ? 'Yadda Saxla'
+                  : 'Avtomobil Əlavə Et'}
+              </Button>
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

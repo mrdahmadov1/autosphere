@@ -29,7 +29,7 @@ function Login() {
   return (
     <div className="max-w-md mx-auto my-12 px-4">
       <div className="bg-white rounded-xl shadow-card p-8">
-        <h1 className="text-3xl font-bold text-neutral-dark mb-6 text-center">Log In</h1>
+        <h1 className="text-3xl font-bold text-neutral-dark mb-6 text-center">Daxil Ol</h1>
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -40,7 +40,7 @@ function Login() {
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="email" className="block text-neutral-dark mb-2">
-              Email
+              E-poçt
             </label>
             <input
               type="email"
@@ -54,7 +54,7 @@ function Login() {
 
           <div className="mb-6">
             <label htmlFor="password" className="block text-neutral-dark mb-2">
-              Password
+              Şifrə
             </label>
             <input
               type="password"
@@ -71,14 +71,14 @@ function Login() {
             disabled={loading}
             className="btn-primary w-full py-3 rounded-lg mb-4"
           >
-            {loading ? 'Logging in...' : 'Log In'}
+            {loading ? 'Daxil olunur...' : 'Daxil Ol'}
           </button>
 
           <div className="text-center">
             <p className="text-neutral/70">
-              Don't have an account?{' '}
+              Hesabınız yoxdur?{' '}
               <Link to="/register" className="text-primary font-medium">
-                Sign Up
+                Qeydiyyatdan Keçin
               </Link>
             </p>
           </div>

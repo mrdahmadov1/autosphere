@@ -69,11 +69,11 @@ function CarDetails() {
             }
           }
         } else {
-          setError('Car not found');
+          setError('Avtomobil tapılmadı');
         }
       } catch (err) {
         console.error('Error fetching car:', err);
-        setError('Error loading car details');
+        setError('Avtomobil məlumatları yüklənə bilmədi');
       } finally {
         setLoading(false);
       }
@@ -96,9 +96,9 @@ function CarDetails() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">{error || 'Car not found'}</h1>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">{error || 'Avtomobil tapılmadı'}</h1>
           <Link to="/" className="text-primary hover:underline">
-            Return to Home
+            Ana Səhifəyə Qayıt
           </Link>
         </div>
       </div>
@@ -122,15 +122,17 @@ function CarDetails() {
             <div className="lg:col-span-3">
               <div className="bg-white rounded-xl shadow-card overflow-hidden mb-10">
                 <div className="p-8">
-                  <h2 className="text-2xl font-bold mb-6 text-neutral-dark">Description</h2>
+                  <h2 className="text-2xl font-bold mb-6 text-neutral-dark">Təsvir</h2>
                   <p className="text-neutral-dark/80 mb-8 whitespace-pre-line">
                     {car.description ||
-                      `Experience the power and elegance of this ${car.year} ${car.brand} ${car.model}. This vehicle combines superior performance with luxurious comfort, making every drive unforgettable.`}
+                      `${car.year} ${car.brand} ${car.model} avtomobilinin gücünü və zərifliyini yaşayın. Bu avtomobil üstün performansı lüks rahatlıqla birləşdirərək, hər sürüşü unudulmaz edir.`}
                   </p>
 
                   {car.features && car.features.length > 0 && (
                     <>
-                      <h3 className="text-xl font-bold mb-4 text-neutral-dark">Key Features</h3>
+                      <h3 className="text-xl font-bold mb-4 text-neutral-dark">
+                        Əsas Xüsusiyyətlər
+                      </h3>
                       <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                         {car.features.map((feature, index) => (
                           <li key={index} className="flex items-center text-neutral-dark/80">
@@ -154,10 +156,12 @@ function CarDetails() {
                   )}
 
                   <div className="border-t border-gray-200 pt-6">
-                    <h3 className="text-xl font-bold mb-4 text-neutral-dark">Vehicle Details</h3>
+                    <h3 className="text-xl font-bold mb-4 text-neutral-dark">
+                      Avtomobil Məlumatları
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm text-neutral/70 mb-1">Brand</p>
+                        <p className="text-sm text-neutral/70 mb-1">Marka</p>
                         <p className="font-medium">{car.brand}</p>
                       </div>
                       <div>
@@ -165,24 +169,24 @@ function CarDetails() {
                         <p className="font-medium">{car.model}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-neutral/70 mb-1">Year</p>
+                        <p className="text-sm text-neutral/70 mb-1">İl</p>
                         <p className="font-medium">{car.year}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-neutral/70 mb-1">Mileage</p>
-                        <p className="font-medium">{car.mileage} miles</p>
+                        <p className="text-sm text-neutral/70 mb-1">Yürüş</p>
+                        <p className="font-medium">{car.mileage} km</p>
                       </div>
                       <div>
-                        <p className="text-sm text-neutral/70 mb-1">Fuel Type</p>
+                        <p className="text-sm text-neutral/70 mb-1">Yanacaq Növü</p>
                         <p className="font-medium">{car.fuel}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-neutral/70 mb-1">Transmission</p>
+                        <p className="text-sm text-neutral/70 mb-1">Sürət Qutusu</p>
                         <p className="font-medium">{car.transmission}</p>
                       </div>
                       {car.color && (
                         <div>
-                          <p className="text-sm text-neutral/70 mb-1">Color</p>
+                          <p className="text-sm text-neutral/70 mb-1">Rəng</p>
                           <p className="font-medium">{car.color}</p>
                         </div>
                       )}
@@ -217,7 +221,7 @@ function CarDetails() {
                         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                       />
                     </svg>
-                    {car.mileage} miles
+                    {car.mileage} km
                   </div>
                   <div className="flex items-center text-neutral/70">
                     <svg
@@ -262,10 +266,10 @@ function CarDetails() {
 
       {/* Similar Cars Section */}
       {similarCars.length > 0 && (
-        <section className="py-16 px-8 bg-neutral-light">
+        <section className="py-16 px-8 bg-gray-50">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl font-bold mb-10 text-neutral-dark">Similar Cars</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <h2 className="text-2xl font-bold mb-8 text-neutral-dark">Oxşar Avtomobillər</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {similarCars.map((similarCar) => (
                 <SimilarCarCard key={similarCar.id} car={similarCar} />
               ))}
@@ -279,38 +283,24 @@ function CarDetails() {
 
 // Component for displaying similar cars with image handling
 function SimilarCarCard({ car }) {
-  const [imageUrl, setImageUrl] = useState(getPlaceholder('loading'));
-  const [loading, setLoading] = useState(true);
+  const [image, setImage] = useState(null);
 
   useEffect(() => {
     const loadImage = async () => {
-      if (car.imagePath) {
-        try {
-          const imageRef = ref(database, car.imagePath);
-          const snapshot = await get(imageRef);
-
-          if (snapshot.exists()) {
-            const imageData = snapshot.val();
-            if (imageData && imageData.data) {
-              setImageUrl(imageData.data);
-            } else {
-              setImageUrl(getPlaceholder('default'));
-            }
-          } else {
-            setImageUrl(getPlaceholder('default'));
+      try {
+        if (car.imagePaths && car.imagePaths.length > 0) {
+          const imageRef = ref(database, car.imagePaths[0]);
+          const imageSnapshot = await get(imageRef);
+          if (imageSnapshot.exists()) {
+            const imageData = imageSnapshot.val();
+            setImage(imageData.data);
           }
-        } catch (err) {
-          console.error('Error loading image:', err);
-          setImageUrl(getPlaceholder('error'));
-        } finally {
-          setLoading(false);
+        } else {
+          setImage(getPlaceholder('car'));
         }
-      } else if (car.image) {
-        setImageUrl(car.image);
-        setLoading(false);
-      } else {
-        setImageUrl(getPlaceholder('car'));
-        setLoading(false);
+      } catch (err) {
+        console.error('Error loading similar car image:', err);
+        setImage(getPlaceholder('car'));
       }
     };
 
@@ -318,32 +308,25 @@ function SimilarCarCard({ car }) {
   }, [car]);
 
   return (
-    <Link to={`/cars/${car.id}`} className="card group">
-      <div className="relative overflow-hidden h-48">
-        {loading ? (
-          <div className="w-full h-full flex items-center justify-center bg-gray-100">
-            <div className="w-8 h-8 border-t-2 border-primary border-solid rounded-full animate-spin"></div>
-          </div>
-        ) : (
-          <img
-            src={imageUrl}
-            alt={`${car.brand} ${car.model}`}
-            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-            onError={() => setImageUrl(getPlaceholder('error'))}
-          />
-        )}
+    <Link
+      to={`/car/${car.id}`}
+      className="bg-white rounded-xl shadow-card overflow-hidden hover:shadow-lg transition-shadow"
+    >
+      <div className="aspect-w-16 aspect-h-9">
+        <img
+          src={image || getPlaceholder('car')}
+          alt={`${car.brand} ${car.model}`}
+          className="w-full h-full object-cover"
+        />
       </div>
       <div className="p-4">
-        <h3 className="text-lg font-bold mb-2 text-neutral-dark">
-          {car.brand} {car.model} ({car.year})
+        <h3 className="text-lg font-bold text-neutral-dark mb-2">
+          {car.brand} {car.model}
         </h3>
         <p className="text-primary font-bold mb-2">${car.price.toLocaleString()}</p>
-        <div className="flex flex-wrap gap-2 text-sm text-neutral/70">
-          <span>{car.mileage} miles</span>
-          <span>•</span>
-          <span>{car.transmission}</span>
-          <span>•</span>
-          <span>{car.fuel}</span>
+        <div className="flex items-center text-sm text-neutral/70">
+          <span className="mr-4">{car.year}</span>
+          <span>{car.mileage} km</span>
         </div>
       </div>
     </Link>
@@ -353,8 +336,7 @@ function SimilarCarCard({ car }) {
 SimilarCarCard.propTypes = {
   car: PropTypes.shape({
     id: PropTypes.string.isRequired,
-    imagePath: PropTypes.string,
-    image: PropTypes.string,
+    imagePaths: PropTypes.array,
     brand: PropTypes.string.isRequired,
     model: PropTypes.string.isRequired,
     year: PropTypes.number.isRequired,

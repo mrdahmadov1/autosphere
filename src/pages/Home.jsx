@@ -95,18 +95,18 @@ function Home() {
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center bg-no-repeat mix-blend-overlay"></div>
         <div className="relative max-w-7xl mx-auto px-8 text-center">
           <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-            Find Your Dream Car Today
+            Arzuladığınız Avtomobili Bu Gün Tapın
           </h1>
           <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">
-            Discover our extensive collection of premium vehicles. Quality, reliability, and style
-            all in one place.
+            Premium avtomobillərimizin geniş kolleksiyasını kəşf edin. Keyfiyyət, etibarlılıq və
+            stil bir yerdə.
           </p>
           <div className="mb-8">
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-xl p-8 border border-white/20">
-              <h2 className="text-2xl font-bold mb-6 text-white">Find Your Perfect Car</h2>
+              <h2 className="text-2xl font-bold mb-6 text-white">Mükəmməl Avtomobilinizi Tapın</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="relative">
-                  <label className="block text-sm font-medium text-white/90 mb-2">Brand</label>
+                  <label className="block text-sm font-medium text-white/90 mb-2">Marka</label>
                   <select
                     name="brand"
                     value={filters.brand}
@@ -114,7 +114,7 @@ function Home() {
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
                   >
                     <option value="" className="bg-neutral-dark">
-                      All Brands
+                      Bütün Markalar
                     </option>
                     {uniqueBrands.map((brand) => (
                       <option key={brand} value={brand} className="bg-neutral-dark">
@@ -132,7 +132,7 @@ function Home() {
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
                   >
                     <option value="" className="bg-neutral-dark">
-                      All Models
+                      Bütün Modellər
                     </option>
                     {uniqueModels.map((model) => (
                       <option key={model} value={model} className="bg-neutral-dark">
@@ -142,20 +142,20 @@ function Home() {
                   </select>
                 </div>
                 <div className="relative">
-                  <label className="block text-sm font-medium text-white/90 mb-2">Year</label>
+                  <label className="block text-sm font-medium text-white/90 mb-2">İl</label>
                   <input
                     type="number"
                     name="year"
                     value={filters.year}
                     onChange={handleFilterChange}
-                    placeholder="Enter year (e.g., 2020)"
+                    placeholder="İl daxil edin (məsələn, 2020)"
                     min="1900"
                     max={new Date().getFullYear()}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
                   />
                 </div>
                 <div className="relative">
-                  <label className="block text-sm font-medium text-white/90 mb-2">Color</label>
+                  <label className="block text-sm font-medium text-white/90 mb-2">Rəng</label>
                   <select
                     name="color"
                     value={filters.color}
@@ -163,43 +163,43 @@ function Home() {
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
                   >
                     <option value="" className="bg-neutral-dark">
-                      All Colors
+                      Bütün Rənglər
                     </option>
                     <option value="black" className="bg-neutral-dark">
-                      Black
+                      Qara
                     </option>
                     <option value="white" className="bg-neutral-dark">
-                      White
+                      Ağ
                     </option>
                     <option value="silver" className="bg-neutral-dark">
-                      Silver
+                      Gümüşü
                     </option>
                     <option value="gray" className="bg-neutral-dark">
-                      Gray
+                      Boz
                     </option>
                     <option value="red" className="bg-neutral-dark">
-                      Red
+                      Qırmızı
                     </option>
                     <option value="blue" className="bg-neutral-dark">
-                      Blue
+                      Mavi
                     </option>
                     <option value="green" className="bg-neutral-dark">
-                      Green
+                      Yaşıl
                     </option>
                     <option value="yellow" className="bg-neutral-dark">
-                      Yellow
+                      Sarı
                     </option>
                     <option value="orange" className="bg-neutral-dark">
-                      Orange
+                      Narıncı
                     </option>
                     <option value="brown" className="bg-neutral-dark">
-                      Brown
+                      Qəhvəyi
                     </option>
                   </select>
                 </div>
                 <div className="relative">
                   <label className="block text-sm font-medium text-white/90 mb-2">
-                    Min Price ($)
+                    Minimum Qiymət ($)
                   </label>
                   <div className="relative">
                     <input
@@ -207,7 +207,7 @@ function Home() {
                       name="minPrice"
                       value={filters.minPrice}
                       onChange={handleFilterChange}
-                      placeholder="Min price"
+                      placeholder="Minimum qiymət"
                       min="0"
                       className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
                     />
@@ -218,7 +218,7 @@ function Home() {
                 </div>
                 <div className="relative">
                   <label className="block text-sm font-medium text-white/90 mb-2">
-                    Max Price ($)
+                    Maksimum Qiymət ($)
                   </label>
                   <div className="relative">
                     <input
@@ -226,7 +226,7 @@ function Home() {
                       name="maxPrice"
                       value={filters.maxPrice}
                       onChange={handleFilterChange}
-                      placeholder="Max price"
+                      placeholder="Maksimum qiymət"
                       min="0"
                       className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
                     />
@@ -274,13 +274,15 @@ function Home() {
       <section className="py-20 px-8 bg-neutral-light">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-neutral-dark">Featured Vehicles</h2>
-            <span className="text-lg text-primary">{filteredCars.length} cars found</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-neutral-dark">
+              Seçilmiş Avtomobillər
+            </h2>
+            <span className="text-lg text-primary">{filteredCars.length} avtomobil tapıldı</span>
           </div>
 
           {loading ? (
             <div className="text-center py-20">
-              <p className="text-xl text-neutral">Loading cars...</p>
+              <p className="text-xl text-neutral">Avtomobillər yüklənir...</p>
             </div>
           ) : error ? (
             <div className="text-center py-20">
@@ -289,9 +291,11 @@ function Home() {
           ) : filteredCars.length === 0 ? (
             <div className="text-center py-20">
               <h3 className="text-2xl font-bold text-neutral">
-                No cars found matching your criteria
+                Axtarış kriteriyalarınıza uyğun avtomobil tapılmadı
               </h3>
-              <p className="mt-4 text-neutral/70">Try adjusting your search or filter settings</p>
+              <p className="mt-4 text-neutral/70">
+                Axtarış və ya filter parametrlərinizi dəyişdirməyə çalışın
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -323,7 +327,7 @@ function Home() {
                             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                           />
                         </svg>
-                        {car.mileage} miles
+                        {car.mileage} km
                       </span>
                       <span className="text-neutral/70 text-sm flex items-center">
                         <svg
@@ -340,7 +344,7 @@ function Home() {
                             d="M19 9l-7 7-7-7"
                           />
                         </svg>
-                        {car.transmission}
+                        {car.transmission === 'automatic' ? 'Avtomatik' : 'Mexaniki'}
                       </span>
                       <span className="text-neutral/70 text-sm flex items-center">
                         <svg
@@ -357,7 +361,11 @@ function Home() {
                             d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                           />
                         </svg>
-                        {car.fuel}
+                        {car.fuel === 'petrol'
+                          ? 'Benzin'
+                          : car.fuel === 'diesel'
+                          ? 'Dizel'
+                          : 'Elektrik'}
                       </span>
                     </div>
                     <p className="text-sm text-neutral/70 mb-4 line-clamp-2">{car.description}</p>
@@ -369,7 +377,7 @@ function Home() {
                         to={`/cars/${car.id}`}
                         className="btn-primary py-2 px-4 rounded-lg inline-block"
                       >
-                        View Details
+                        Ətraflı Məlumat
                       </Link>
                     </div>
                   </div>
@@ -384,7 +392,7 @@ function Home() {
       <section className="py-20 px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-neutral-dark mb-16">
-            Why Choose AutoSphere
+            Niyə AutoSphere Seçməlisiniz
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             <div className="text-center">
@@ -404,10 +412,10 @@ function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Quality Assurance</h3>
+              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Keyfiyyət Zəmanəti</h3>
               <p className="text-neutral/70">
-                All our vehicles undergo rigorous inspection to ensure the highest quality
-                standards.
+                Bütün avtomobillərimiz ən yüksək keyfiyyət standartlarını təmin etmək üçün ciddi
+                yoxlamadan keçir.
               </p>
             </div>
             <div className="text-center">
@@ -427,9 +435,10 @@ function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Fair Prices</h3>
+              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Ədalətli Qiymətlər</h3>
               <p className="text-neutral/70">
-                Competitive pricing with no hidden fees. Get the best value for your money.
+                Gizli ödənişlər olmadan rəqabətli qiymətlər. Pulunuzun qarşılığını ən yaxşı şəkildə
+                alın.
               </p>
             </div>
             <div className="text-center">
@@ -449,10 +458,10 @@ function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Fast & Easy</h3>
+              <h3 className="text-xl font-bold mb-4 text-neutral-dark">Sürətli və Asan</h3>
               <p className="text-neutral/70">
-                Simple and straightforward process to help you find and purchase your dream car
-                without hassle.
+                Arzuladığınız avtomobili problem yaşamadan tapmaq və almaq üçün sadə və aydın
+                proses.
               </p>
             </div>
           </div>
