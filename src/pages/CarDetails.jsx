@@ -202,8 +202,8 @@ function CarDetails() {
                 <h2 className="text-2xl font-bold mb-4 text-neutral-dark">
                   {car.brand} {car.model}
                 </h2>
-                <p className="text-3xl font-bold text-primary mb-6">
-                  ${car.price.toLocaleString()}
+                <p className="text-3xl font-bold text-primary mb-4">
+                  ₼{car.price.toLocaleString()}
                 </p>
                 <div className="space-y-4">
                   <div className="flex items-center text-neutral/70">
@@ -323,7 +323,7 @@ function SimilarCarCard({ car }) {
         <h3 className="text-lg font-bold text-neutral-dark mb-2">
           {car.brand} {car.model}
         </h3>
-        <p className="text-primary font-bold mb-2">${car.price.toLocaleString()}</p>
+        <p className="text-primary font-bold mb-2">₼{car.price.toLocaleString()}</p>
         <div className="flex items-center text-sm text-neutral/70">
           <span className="mr-4">{car.year}</span>
           <span>{car.mileage} km</span>

@@ -90,7 +90,7 @@ const CarCard = memo(({ car, onEdit, onDelete }) => {
         <h3 className="text-lg font-bold mb-2 text-neutral-dark">
           {car.brand} {car.model} ({car.year})
         </h3>
-        <p className="text-primary font-bold mb-2">${car.price.toLocaleString()}</p>
+        <p className="text-primary font-bold mb-2">₼{car.price.toLocaleString()}</p>
         <div className="flex justify-between">
           <button
             className="text-neutral-dark hover:text-primary transition-colors"

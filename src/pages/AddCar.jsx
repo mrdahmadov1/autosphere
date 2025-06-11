@@ -13,6 +13,7 @@ import {
   SelectField,
   FileField,
   Button,
+  Input,
 } from '../components/ui/FormElements';
 
 function AddCar() {
@@ -618,6 +619,13 @@ function AddCar() {
   // Flag to check if form has been touched
   const hasBeenTouched = useMemo(() => Object.keys(formTouched).length > 0, [formTouched]);
 
+  const handleBlur = (e) => {
+    setFormTouched((prev) => ({
+      ...prev,
+      [e.target.name]: true,
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-4xl mx-auto px-4">
@@ -663,14 +671,17 @@ function AddCar() {
                 />
               </FormGroup>
 
-              <FormGroup label="Qiymət ($)" error={formTouched.price && errors.price} required>
+              <FormGroup label="Qiymət (₼)" error={formTouched.price && errors.price} required>
                 <TextField
-                  type="text"
+                  type="number"
                   name="price"
                   value={formData.price}
                   onChange={handleChange}
-                  placeholder="Qiymət daxil edin"
+                  onBlur={handleBlur}
+                  placeholder="Qiymət"
+                  required
                 />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral/60">AZN</div>
               </FormGroup>
 
               <FormGroup label="Yürüş (km)" error={formTouched.mileage && errors.mileage} required>
