@@ -72,7 +72,9 @@ function AddCar() {
                     // Convert base64 to Blob
                     const base64Response = await fetch(imageData.data);
                     const blob = await base64Response.blob();
-                    return blob;
+                    // Create a File object from the Blob
+                    const file = new File([blob], `image-${Date.now()}.jpg`, { type: blob.type });
+                    return file;
                   }
                 }
                 return null;
@@ -83,7 +85,7 @@ function AddCar() {
 
               // Set both images and previews
               setImages(validImages);
-              setImagePreviews(validImages.map((blob) => URL.createObjectURL(blob)));
+              setImagePreviews(validImages.map((file) => URL.createObjectURL(file)));
             } catch (err) {
               console.error('Error fetching images from database:', err);
             }
@@ -136,6 +138,11 @@ function AddCar() {
     };
 
     init();
+
+    // Cleanup function to revoke object URLs
+    return () => {
+      imagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    };
   }, [location.state]);
 
   // Validate form fields

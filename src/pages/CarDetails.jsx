@@ -285,10 +285,10 @@ function CarDetails() {
                 <div className="mt-6">
                   {currentUser && currentUser.uid === car.userId ? (
                     <Link
-                      to={`/edit-car/${id}`}
+                      to="/profile"
                       className="block w-full text-center bg-primary text-white py-3 px-6 rounded-lg hover:bg-primary-dark transition-colors"
                     >
-                      Düzəliş Et
+                      Profilə Qayıt
                     </Link>
                   ) : (
                     <button
