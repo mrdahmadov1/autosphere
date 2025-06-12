@@ -7,32 +7,27 @@ function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { signup } = useAuth();
+  const { signup, authError, operationLoading, setAuthError } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      return setError('Şifrələr uyğun gəlmir');
+      return setAuthError('Şifrələr uyğun gəlmir');
     }
 
     if (password.length < 6) {
-      return setError('Şifrə ən azı 6 simvol olmalıdır');
+      return setAuthError('Şifrə ən azı 6 simvol olmalıdır');
     }
 
     try {
-      setError('');
-      setLoading(true);
+      setAuthError(null);
       await signup(email, password, name);
       navigate('/');
     } catch (error) {
-      setError('Hesab yaradıla bilmədi. ' + error.message);
+      // Error is already handled by the auth context
       console.error(error);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -41,9 +36,9 @@ function Register() {
       <div className="bg-white rounded-xl shadow-card p-8">
         <h1 className="text-3xl font-bold text-neutral-dark mb-6 text-center">Hesab Yarat</h1>
 
-        {error && (
+        {authError && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+            {authError}
           </div>
         )}
 
@@ -106,10 +101,10 @@ function Register() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={operationLoading}
             className="btn-primary w-full py-3 rounded-lg mb-4"
           >
-            {loading ? 'Hesab yaradılır...' : 'Qeydiyyatdan Keç'}
+            {operationLoading ? 'Hesab yaradılır...' : 'Qeydiyyatdan Keç'}
           </button>
 
           <div className="text-center">

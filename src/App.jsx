@@ -8,7 +8,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
 import AddCar from './pages/AddCar';
+import Applications from './pages/Applications';
 import PrivateRoute from './components/PrivateRoute';
+import ChatBot from './components/ChatBot';
 
 function App() {
   return (
@@ -36,7 +38,16 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/applications"
+          element={
+            <PrivateRoute>
+              <Applications />
+            </PrivateRoute>
+          }
+        />
       </Routes>
+      <ChatBot />
     </Layout>
   );
 }

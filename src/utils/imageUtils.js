@@ -1,7 +1,7 @@
 /**
- * Maximum image size in bytes (2MB)
+ * Maximum image size in bytes (5MB)
  */
-export const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+export const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 /**
  * Valid image mime types
@@ -98,7 +98,7 @@ export const validateImage = (file) => {
   if (file.size > MAX_IMAGE_SIZE) {
     return {
       valid: false,
-      error: 'Image size should be less than 2MB',
+      error: 'Image size should be less than 5MB',
     };
   }
 

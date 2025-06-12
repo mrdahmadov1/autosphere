@@ -1,28 +1,27 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, authError, operationLoading, setAuthError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get the redirect path from location state or default to home
+  const from = location.state?.from?.pathname || '/';
 
   async function handleSubmit(e) {
     e.preventDefault();
 
     try {
-      setError('');
-      setLoading(true);
+      setAuthError(null);
       await login(email, password);
-      navigate('/');
+      navigate(from, { replace: true });
     } catch (error) {
-      setError('Failed to log in. Please check your credentials.');
+      // Error is already handled by the auth context
       console.error(error);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -31,9 +30,9 @@ function Login() {
       <div className="bg-white rounded-xl shadow-card p-8">
         <h1 className="text-3xl font-bold text-neutral-dark mb-6 text-center">Daxil Ol</h1>
 
-        {error && (
+        {authError && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+            {authError}
           </div>
         )}
 
@@ -68,10 +67,10 @@ function Login() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={operationLoading}
             className="btn-primary w-full py-3 rounded-lg mb-4"
           >
-            {loading ? 'Daxil olunur...' : 'Daxil Ol'}
+            {operationLoading ? 'Daxil olunur...' : 'Daxil Ol'}
           </button>
 
           <div className="text-center">

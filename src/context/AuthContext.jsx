@@ -14,43 +14,77 @@ export const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
+  const [operationLoading, setOperationLoading] = useState(false);
 
   async function signup(email, password, name) {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    try {
+      setOperationLoading(true);
+      setAuthError(null);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-    // Update profile with display name
-    await updateProfile(userCredential.user, {
-      displayName: name,
-    });
+      // Update profile with display name
+      await updateProfile(userCredential.user, {
+        displayName: name,
+      });
 
-    // Create user document in Realtime Database
-    await set(ref(database, `users/${userCredential.user.uid}`), {
-      name,
-      email,
-      createdAt: Date.now(),
-      cars: {},
-    });
+      // Create user document in Realtime Database
+      await set(ref(database, `users/${userCredential.user.uid}`), {
+        name,
+        email,
+        createdAt: Date.now(),
+        cars: {},
+      });
 
-    return userCredential.user;
+      return userCredential.user;
+    } catch (error) {
+      setAuthError(error.message);
+      throw error;
+    } finally {
+      setOperationLoading(false);
+    }
   }
 
-  function login(email, password) {
-    return signInWithEmailAndPassword(auth, email, password);
+  async function login(email, password) {
+    try {
+      setOperationLoading(true);
+      setAuthError(null);
+      return await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      setAuthError(error.message);
+      throw error;
+    } finally {
+      setOperationLoading(false);
+    }
   }
 
-  function logout() {
-    return signOut(auth);
+  async function logout() {
+    try {
+      setOperationLoading(true);
+      setAuthError(null);
+      await signOut(auth);
+    } catch (error) {
+      setAuthError(error.message);
+      throw error;
+    } finally {
+      setOperationLoading(false);
+    }
   }
 
   async function getUserProfile() {
     if (!currentUser) return null;
 
-    const userRef = ref(database, `users/${currentUser.uid}`);
-    const snapshot = await get(userRef);
+    try {
+      const userRef = ref(database, `users/${currentUser.uid}`);
+      const snapshot = await get(userRef);
 
-    if (snapshot.exists()) {
-      return snapshot.val();
-    } else {
+      if (snapshot.exists()) {
+        return snapshot.val();
+      } else {
+        return null;
+      }
+    } catch (error) {
+      setAuthError(error.message);
       return null;
     }
   }
@@ -70,6 +104,9 @@ export function AuthProvider({ children }) {
     login,
     logout,
     getUserProfile,
+    authError,
+    operationLoading,
+    setAuthError,
   };
 
   return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;

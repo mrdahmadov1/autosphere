@@ -5,6 +5,14 @@ import PropTypes from 'prop-types';
 import { getPlaceholder } from '../utils/imageUtils';
 import { useNotification } from '../context/NotificationContext';
 import { ImageSlider } from '../components/ui/ImageSlider';
+import { useAuth } from '../context/useAuth';
+import ApplicationForm from '../components/ApplicationForm';
+import {
+  calculateAveragePrice,
+  getPriceStatus,
+  getPriceColorClass,
+  getPriceStatusText,
+} from '../utils/priceUtils';
 
 function CarDetails() {
   const { id } = useParams();
@@ -13,7 +21,10 @@ function CarDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [images, setImages] = useState([]);
+  const [showApplicationForm, setShowApplicationForm] = useState(false);
   const { error: showError } = useNotification();
+  const { currentUser } = useAuth();
+  const [priceStatus, setPriceStatus] = useState('normal');
 
   useEffect(() => {
     const fetchCarData = async () => {
@@ -59,10 +70,16 @@ function CarDetails() {
                   .map((key) => ({
                     id: key,
                     ...carsData[key],
-                  }))
-                  .slice(0, 3);
+                  }));
 
                 setSimilarCars(similarCarsArray);
+
+                // Calculate price status
+                const averagePrice = calculateAveragePrice(carData, similarCarsArray);
+                if (averagePrice) {
+                  const status = getPriceStatus(carData.price, averagePrice);
+                  setPriceStatus(status);
+                }
               }
             } catch (similarError) {
               console.error('Error fetching similar cars:', similarError);
@@ -202,9 +219,14 @@ function CarDetails() {
                 <h2 className="text-2xl font-bold mb-4 text-neutral-dark">
                   {car.brand} {car.model}
                 </h2>
-                <p className="text-3xl font-bold text-primary mb-6">
-                  ${car.price.toLocaleString()}
-                </p>
+                <div className="mb-4">
+                  <p className={`text-3xl font-bold ${getPriceColorClass(priceStatus)}`}>
+                    ₼{car.price.toLocaleString()}
+                  </p>
+                  <p className={`text-sm ${getPriceColorClass(priceStatus)}`}>
+                    {getPriceStatusText(priceStatus)}
+                  </p>
+                </div>
                 <div className="space-y-4">
                   <div className="flex items-center text-neutral/70">
                     <svg
@@ -258,11 +280,39 @@ function CarDetails() {
                     {car.transmission}
                   </div>
                 </div>
+
+                {/* Apply to Buy Button */}
+                <div className="mt-6">
+                  {currentUser && currentUser.uid === car.userId ? (
+                    <Link
+                      to="/profile"
+                      className="block w-full text-center bg-primary text-white py-3 px-6 rounded-lg hover:bg-primary-dark transition-colors"
+                    >
+                      Profilə Qayıt
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => setShowApplicationForm(true)}
+                      className="w-full bg-primary text-white py-3 px-6 rounded-lg hover:bg-primary-dark transition-colors"
+                    >
+                      Almaq üçün Müraciət Et
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Application Form Modal */}
+      {showApplicationForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100]">
+          <div className="max-w-lg w-full bg-white rounded-xl shadow-lg">
+            <ApplicationForm carId={id} onClose={() => setShowApplicationForm(false)} />
+          </div>
+        </div>
+      )}
 
       {/* Similar Cars Section */}
       {similarCars.length > 0 && (
@@ -270,8 +320,8 @@ function CarDetails() {
           <div className="max-w-7xl mx-auto">
             <h2 className="text-2xl font-bold mb-8 text-neutral-dark">Oxşar Avtomobillər</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {similarCars.map((similarCar) => (
-                <SimilarCarCard key={similarCar.id} car={similarCar} />
+              {similarCars.map((car) => (
+                <SimilarCarCard key={car.id} car={car} />
               ))}
             </div>
           </div>
@@ -284,6 +334,7 @@ function CarDetails() {
 // Component for displaying similar cars with image handling
 function SimilarCarCard({ car }) {
   const [image, setImage] = useState(null);
+  const [priceStatus, setPriceStatus] = useState('normal');
 
   useEffect(() => {
     const loadImage = async () => {
@@ -304,7 +355,34 @@ function SimilarCarCard({ car }) {
       }
     };
 
+    const fetchSimilarCars = async () => {
+      try {
+        const carsRef = ref(database, 'cars');
+        const carsSnapshot = await get(carsRef);
+
+        if (carsSnapshot.exists()) {
+          const carsData = carsSnapshot.val();
+          const similarCarsArray = Object.keys(carsData)
+            .filter((key) => key !== car.id && carsData[key].brand === car.brand)
+            .map((key) => ({
+              id: key,
+              ...carsData[key],
+            }));
+
+          // Calculate price status
+          const averagePrice = calculateAveragePrice(car, similarCarsArray);
+          if (averagePrice) {
+            const status = getPriceStatus(car.price, averagePrice);
+            setPriceStatus(status);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching similar cars for comparison:', err);
+      }
+    };
+
     loadImage();
+    fetchSimilarCars();
   }, [car]);
 
   return (
@@ -323,7 +401,14 @@ function SimilarCarCard({ car }) {
         <h3 className="text-lg font-bold text-neutral-dark mb-2">
           {car.brand} {car.model}
         </h3>
-        <p className="text-primary font-bold mb-2">${car.price.toLocaleString()}</p>
+        <div className="mb-2">
+          <p className={`text-primary font-bold ${getPriceColorClass(priceStatus)}`}>
+            ₼{car.price.toLocaleString()}
+          </p>
+          <p className={`text-xs ${getPriceColorClass(priceStatus)}`}>
+            {getPriceStatusText(priceStatus)}
+          </p>
+        </div>
         <div className="flex items-center text-sm text-neutral/70">
           <span className="mr-4">{car.year}</span>
           <span>{car.mileage} km</span>

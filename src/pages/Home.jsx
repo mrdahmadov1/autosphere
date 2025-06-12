@@ -199,7 +199,7 @@ function Home() {
                 </div>
                 <div className="relative">
                   <label className="block text-sm font-medium text-white/90 mb-2">
-                    Minimum Qiymət ($)
+                    Minimum Qiymət (₼)
                   </label>
                   <div className="relative">
                     <input
@@ -211,14 +211,14 @@ function Home() {
                       min="0"
                       className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50">
-                      USD
-                    </span>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60">
+                      AZN
+                    </div>
                   </div>
                 </div>
                 <div className="relative">
                   <label className="block text-sm font-medium text-white/90 mb-2">
-                    Maksimum Qiymət ($)
+                    Maksimum Qiymət (₼)
                   </label>
                   <div className="relative">
                     <input
@@ -230,9 +230,9 @@ function Home() {
                       min="0"
                       className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all duration-200"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50">
-                      USD
-                    </span>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60">
+                      AZN
+                    </div>
                   </div>
                 </div>
               </div>
@@ -370,9 +370,7 @@ function Home() {
                     </div>
                     <p className="text-sm text-neutral/70 mb-4 line-clamp-2">{car.description}</p>
                     <div className="flex justify-between items-center">
-                      <span className="text-2xl font-bold text-primary">
-                        ${car.price.toLocaleString()}
-                      </span>
+                      <p className="text-primary font-bold mb-2">₼{car.price.toLocaleString()}</p>
                       <Link
                         to={`/cars/${car.id}`}
                         className="btn-primary py-2 px-4 rounded-lg inline-block"

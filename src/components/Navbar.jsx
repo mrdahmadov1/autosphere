@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
+import { useNotification } from '../context/NotificationContext';
 
 function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
+  const { success: showSuccess, error: showError } = useNotification();
   const navigate = useNavigate();
 
   const navItems = [
@@ -24,6 +26,16 @@ function Navbar() {
       return;
     }
     navigate('/add-car');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      showSuccess('Uğurla çıxış edildi');
+      navigate('/');
+    } catch (error) {
+      showError('Çıxış edilə bilmədi');
+    }
   };
 
   return (
@@ -59,6 +71,9 @@ function Navbar() {
                 className="text-white bg-accent hover:bg-accent/80 px-4 py-2 rounded-lg font-medium transition-colors duration-300"
               >
                 Avtomobil Əlavə Et
+              </Link>
+              <Link to="/applications" className="text-white hover:text-accent">
+                Müraciətlər
               </Link>
               <Link to="/profile" className="text-white flex items-center hover:text-accent">
                 <svg
@@ -152,6 +167,13 @@ function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Mənim Profilim
+                </Link>
+                <Link
+                  to="/applications"
+                  className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Müraciətlər
                 </Link>
                 <Link
                   to="/add-car"
