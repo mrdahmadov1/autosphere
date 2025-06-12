@@ -194,7 +194,7 @@ export const validateCarForm = (formData, requireImage = true) => {
     }
   }
 
-  // Image validation
+  // Image validation - only check if we have images array
   if (requireImage && (!formData.images || formData.images.length === 0)) {
     errors.image = 'Ən azı bir şəkil yükləyin';
   }

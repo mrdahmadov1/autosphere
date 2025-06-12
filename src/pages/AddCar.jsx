@@ -22,8 +22,8 @@ function AddCar() {
     year: new Date().getFullYear(),
     price: '',
     mileage: '',
-    fuel: 'Benzin',
-    transmission: 'Avtomatik',
+    fuel: 'Gasoline',
+    transmission: 'Automatic',
     color: '',
     description: '',
     features: [''],
@@ -69,7 +69,10 @@ function AddCar() {
                 if (imageSnapshot.exists()) {
                   const imageData = imageSnapshot.val();
                   if (imageData && imageData.data) {
-                    return imageData.data;
+                    // Convert base64 to Blob
+                    const base64Response = await fetch(imageData.data);
+                    const blob = await base64Response.blob();
+                    return blob;
                   }
                 }
                 return null;
@@ -77,7 +80,10 @@ function AddCar() {
 
               const imageResults = await Promise.all(imagePromises);
               const validImages = imageResults.filter((data) => data !== null);
-              setImagePreviews(validImages);
+
+              // Set both images and previews
+              setImages(validImages);
+              setImagePreviews(validImages.map((blob) => URL.createObjectURL(blob)));
             } catch (err) {
               console.error('Error fetching images from database:', err);
             }
@@ -117,8 +123,8 @@ function AddCar() {
           year: completeCarData.year || new Date().getFullYear(),
           price: completeCarData.price ? completeCarData.price.toString() : '',
           mileage: completeCarData.mileage ? completeCarData.mileage.toString() : '',
-          fuel: completeCarData.fuel || 'Benzin',
-          transmission: completeCarData.transmission || 'Avtomatik',
+          fuel: completeCarData.fuel || 'Gasoline',
+          transmission: completeCarData.transmission || 'Automatic',
           color: completeCarData.color || '',
           description: completeCarData.description || '',
           features:
@@ -137,8 +143,7 @@ function AddCar() {
     // Create form data object with image info
     const formDataWithImage = {
       ...formData,
-      images,
-      imagePreviews,
+      images: images.length > 0 ? images : undefined,
     };
 
     // Validate using utility function
@@ -162,7 +167,7 @@ function AddCar() {
 
     // Check if there are any errors
     return Object.keys(validationErrors).length === 0;
-  }, [formData, images, imagePreviews, isEditMode]);
+  }, [formData, images, isEditMode]);
 
   // Generate year options (last 30 years)
   const yearOptions = useMemo(() => {
@@ -357,28 +362,130 @@ function AddCar() {
     });
   }, []);
 
+  // Handle image updates for existing car
+  const handleImageUpdates = async (carId) => {
+    if (images.length === 0) return [];
+
+    try {
+      const imagePaths = await uploadImagesToDatabase(images, carId);
+      if (originalCar.imagePaths?.length > 0) {
+        await deleteImagesFromDatabase(originalCar.imagePaths);
+      }
+      return imagePaths;
+    } catch (error) {
+      console.error('Error handling images:', error);
+      throw new Error('Şəkillərin yüklənməsində xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.');
+    }
+  };
+
+  // Update existing car
+  const updateExistingCar = async (carId, carData, imagePaths) => {
+    const carRef = ref(database, `cars/${carId}`);
+    const updatedData = {
+      ...carData,
+      updatedAt: Date.now(),
+      imagePaths,
+    };
+
+    await update(carRef, updatedData);
+
+    const carSummary = {
+      id: carId,
+      brand: formData.brand,
+      model: formData.model,
+      year: parseInt(formData.year),
+      price: parseInt(formData.price),
+      mileage: parseInt(formData.mileage),
+      color: formData.color,
+      transmission: formData.transmission,
+      fuel: formData.fuel,
+      imagePaths,
+      updatedAt: Date.now(),
+    };
+
+    const userRef = ref(database, `users/${currentUser.uid}`);
+    const userSnapshot = await get(userRef);
+
+    if (!userSnapshot.exists()) {
+      throw new Error('İstifadəçi məlumatları tapılmadı');
+    }
+
+    const userData = userSnapshot.val();
+    const userCars = userData.cars || {};
+    userCars[carId] = carSummary;
+    await update(userRef, { cars: userCars });
+  };
+
+  // Create new car
+  const createNewCar = async (carData) => {
+    const carsRef = ref(database, 'cars');
+    const newCarRef = push(carsRef);
+    const carId = newCarRef.key;
+
+    if (!carId) {
+      throw new Error('Failed to generate car ID');
+    }
+
+    const imagePaths = images.length > 0 ? await uploadImagesToDatabase(images, carId) : [];
+    const newCarData = {
+      ...carData,
+      createdAt: Date.now(),
+      imagePaths,
+    };
+
+    await set(newCarRef, newCarData);
+
+    const carSummary = {
+      id: carId,
+      brand: formData.brand,
+      model: formData.model,
+      year: parseInt(formData.year),
+      price: parseInt(formData.price),
+      mileage: parseInt(formData.mileage),
+      color: formData.color,
+      transmission: formData.transmission,
+      fuel: formData.fuel,
+      imagePaths,
+    };
+
+    const userRef = ref(database, `users/${currentUser.uid}`);
+    const userSnapshot = await get(userRef);
+
+    if (userSnapshot.exists()) {
+      const userData = userSnapshot.val();
+      const userCars = userData.cars || {};
+      userCars[carId] = carSummary;
+      await update(userRef, { cars: userCars });
+    } else {
+      await set(userRef, {
+        name: currentUser.displayName || '',
+        email: currentUser.email || '',
+        createdAt: Date.now(),
+        cars: { [carId]: carSummary },
+      });
+    }
+
+    return carId;
+  };
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate entire form
-    const isValid = validateForm();
-    if (!isValid) {
+    if (!validateForm()) {
       showError('Zəhmət olmasa formada olan xətaları düzəldin.');
+      return;
+    }
+
+    if (!currentUser) {
+      showError('Avtomobil əlavə etmək üçün daxil olmalısınız.');
+      navigate('/login');
       return;
     }
 
     try {
       setLoading(true);
 
-      // Check if user is authenticated
-      if (!currentUser) {
-        showError('Avtomobil əlavə etmək üçün daxil olmalısınız.');
-        navigate('/login');
-        return;
-      }
-
-      // Create basic car data without images first
       const carData = {
         ...formData,
         features: formData.features.filter((feature) => feature.trim() !== ''),
@@ -388,177 +495,16 @@ function AddCar() {
         year: parseInt(formData.year),
       };
 
-      let carId;
-      let imagePaths = [];
-
-      if (isEditMode && originalCar && originalCar.id) {
-        // If editing, use existing car ID
-        carId = originalCar.id;
-
-        // Handle image updates
-        if (images.length > 0) {
-          try {
-            // Upload new images to database
-            imagePaths = await uploadImagesToDatabase(images, carId);
-
-            // If there were old images, delete them
-            if (originalCar.imagePaths && originalCar.imagePaths.length > 0) {
-              await deleteImagesFromDatabase(originalCar.imagePaths);
-            }
-          } catch (imageError) {
-            console.error('Error handling images:', imageError);
-            showError('Şəkillərin yüklənməsində xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.');
-            return;
-          }
-        }
-
-        // Update car with imagePaths
-        const carRef = ref(database, `cars/${carId}`);
-
-        // Add timestamp and imagePaths to car data
-        carData.updatedAt = Date.now();
-        carData.imagePaths = imagePaths;
-
-        try {
-          // First, update the car in Realtime Database
-          await update(carRef, carData);
-
-          // Create updated car summary for user's array
-          const carSummary = {
-            id: carId,
-            brand: formData.brand,
-            model: formData.model,
-            year: parseInt(formData.year),
-            price: parseInt(formData.price),
-            mileage: parseInt(formData.mileage),
-            color: formData.color,
-            transmission: formData.transmission,
-            fuel: formData.fuel,
-            imagePaths: imagePaths,
-            updatedAt: Date.now(),
-          };
-
-          // Get current user data
-          const userRef = ref(database, `users/${currentUser.uid}`);
-          const userSnapshot = await get(userRef);
-
-          if (userSnapshot.exists()) {
-            // Get current cars object
-            const userData = userSnapshot.val();
-            const userCars = userData.cars || {};
-
-            // Update the car in the user's cars object
-            userCars[carId] = carSummary;
-
-            // Update the user document with the updated cars
-            await update(userRef, { cars: userCars });
-
-            // Show success notification
-            success(`${formData.brand} ${formData.model} uğurla yeniləndi`);
-            navigate('/profile');
-          } else {
-            showError('İstifadəçi məlumatları tapılmadı. Zəhmət olmasa yenidən cəhd edin.');
-          }
-        } catch (updateError) {
-          console.error('Error updating car:', updateError);
-          showError(
-            'Avtomobil məlumatlarının yenilənməsində xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.'
-          );
-          return;
-        }
+      if (isEditMode && originalCar?.id) {
+        const imagePaths = await handleImageUpdates(originalCar.id);
+        await updateExistingCar(originalCar.id, carData, imagePaths);
+        success(`${formData.brand} ${formData.model} uğurla yeniləndi`);
       } else {
-        try {
-          // Adding a new car
-          // Generate a new car ID
-          const carsRef = ref(database, 'cars');
-          const newCarRef = push(carsRef);
-          carId = newCarRef.key;
-
-          if (!carId) {
-            throw new Error('Failed to generate car ID');
-          }
-
-          // Add timestamp
-          carData.createdAt = Date.now();
-
-          // Upload images if provided
-          if (images.length > 0) {
-            try {
-              imagePaths = await uploadImagesToDatabase(images, carId);
-              carData.imagePaths = imagePaths;
-            } catch (imageError) {
-              console.error('Error uploading images:', imageError);
-              showError(
-                'Şəkillərin yüklənməsində xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.'
-              );
-              return;
-            }
-          }
-
-          // Save car data to database
-          try {
-            await set(newCarRef, carData);
-          } catch (dbError) {
-            console.error('Error saving car data:', dbError);
-            showError(
-              'Avtomobil məlumatlarının yadda saxlanmasında xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.'
-            );
-            return;
-          }
-
-          // Create car summary for user's cars
-          const carSummary = {
-            id: carId,
-            brand: formData.brand,
-            model: formData.model,
-            year: parseInt(formData.year),
-            price: parseInt(formData.price),
-            mileage: parseInt(formData.mileage),
-            color: formData.color,
-            transmission: formData.transmission,
-            fuel: formData.fuel,
-            imagePaths: imagePaths,
-          };
-
-          // Add the car to user's cars in Realtime Database
-          try {
-            const userRef = ref(database, `users/${currentUser.uid}`);
-            const userSnapshot = await get(userRef);
-
-            if (userSnapshot.exists()) {
-              const userData = userSnapshot.val();
-              const userCars = userData.cars || {};
-
-              // Add new car to user's cars
-              userCars[carId] = carSummary;
-
-              // Update user data
-              await update(userRef, { cars: userCars });
-            } else {
-              // If user document doesn't exist, create it
-              await set(userRef, {
-                name: currentUser.displayName || '',
-                email: currentUser.email || '',
-                createdAt: Date.now(),
-                cars: { [carId]: carSummary },
-              });
-            }
-
-            // Show success message
-            success(`${formData.brand} ${formData.model} uğurla əlavə edildi`);
-            navigate('/profile');
-          } catch (userError) {
-            console.error('Error updating user data:', userError);
-            showError(
-              'İstifadəçi məlumatlarının yenilənməsində xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.'
-            );
-            return;
-          }
-        } catch (error) {
-          console.error('Error in car creation process:', error);
-          showError('Avtomobil əlavə edilməsində xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.');
-        }
+        await createNewCar(carData);
+        success(`${formData.brand} ${formData.model} uğurla əlavə edildi`);
       }
+
+      navigate('/profile');
     } catch (err) {
       console.error('Error saving car:', err);
       showError(
