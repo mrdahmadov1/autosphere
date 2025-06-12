@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/useAuth';
 import { useNotification } from '../context/NotificationContext';
-import { database, ref, get, update } from '../firebase/config';
+import { database, ref, get } from '../firebase/config';
 import { Link } from 'react-router-dom';
 
-function Applications() {
+function MyApplications() {
   const [sentApplications, setSentApplications] = useState([]);
   const [receivedApplications, setReceivedApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
-  const { success, error: showError } = useNotification();
+  const { error: showError } = useNotification();
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -68,22 +68,6 @@ function Applications() {
       fetchApplications();
     }
   }, [currentUser, showError]);
-
-  const handleStatusChange = async (applicationId, newStatus) => {
-    try {
-      const applicationRef = ref(database, `applications/${applicationId}`);
-      await update(applicationRef, { status: newStatus });
-
-      setReceivedApplications((prev) =>
-        prev.map((app) => (app.id === applicationId ? { ...app, status: newStatus } : app))
-      );
-
-      success('Müraciətin statusu yeniləndi');
-    } catch (err) {
-      console.error('Error updating application status:', err);
-      showError('Status yenilənərkən xəta baş verdi');
-    }
-  };
 
   if (loading) {
     return (
@@ -155,26 +139,10 @@ function Applications() {
         )}
       </div>
 
-      <div className="flex justify-end space-x-4">
+      <div className="flex justify-end">
         <Link to={`/cars/${application.carId}`} className="text-primary hover:underline">
           Avtomobilə bax
         </Link>
-        {type === 'received' && application.status === 'pending' && (
-          <>
-            <button
-              onClick={() => handleStatusChange(application.id, 'approved')}
-              className="text-green-600 hover:text-green-700"
-            >
-              Təsdiqlə
-            </button>
-            <button
-              onClick={() => handleStatusChange(application.id, 'rejected')}
-              className="text-red-600 hover:text-red-700"
-            >
-              Rədd et
-            </button>
-          </>
-        )}
       </div>
     </div>
   );
@@ -182,7 +150,7 @@ function Applications() {
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4">
-        <h1 className="text-3xl font-bold text-neutral-dark mb-8">Müraciətlər</h1>
+        <h1 className="text-3xl font-bold text-neutral-dark mb-8">Mənim Müraciətlərim</h1>
 
         {/* Sent Applications */}
         <div className="mb-12">
@@ -220,4 +188,4 @@ function Applications() {
   );
 }
 
-export default Applications;
+export default MyApplications;

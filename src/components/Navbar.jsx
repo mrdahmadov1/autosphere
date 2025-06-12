@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
+import { useNotification } from '../context/NotificationContext';
 
 function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
+  const { success: showSuccess, error: showError } = useNotification();
   const navigate = useNavigate();
 
   const navItems = [
@@ -24,6 +26,16 @@ function Navbar() {
       return;
     }
     navigate('/add-car');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      showSuccess('Uğurla çıxış edildi');
+      navigate('/');
+    } catch (error) {
+      showError('Çıxış edilə bilmədi');
+    }
   };
 
   return (
