@@ -60,6 +60,9 @@ function Navbar() {
               >
                 Avtomobil Əlavə Et
               </Link>
+              <Link to="/applications" className="text-white hover:text-accent">
+                Müraciətlər
+              </Link>
               <Link to="/profile" className="text-white flex items-center hover:text-accent">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -152,6 +155,13 @@ function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Mənim Profilim
+                </Link>
+                <Link
+                  to="/applications"
+                  className="py-3 text-neutral-dark font-medium text-lg border-b border-gray-100"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Müraciətlər
                 </Link>
                 <Link
                   to="/add-car"

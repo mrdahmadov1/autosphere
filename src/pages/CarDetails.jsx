@@ -5,6 +5,8 @@ import PropTypes from 'prop-types';
 import { getPlaceholder } from '../utils/imageUtils';
 import { useNotification } from '../context/NotificationContext';
 import { ImageSlider } from '../components/ui/ImageSlider';
+import { useAuth } from '../context/useAuth';
+import ApplicationForm from '../components/ApplicationForm';
 
 function CarDetails() {
   const { id } = useParams();
@@ -13,7 +15,9 @@ function CarDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [images, setImages] = useState([]);
+  const [showApplicationForm, setShowApplicationForm] = useState(false);
   const { error: showError } = useNotification();
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     const fetchCarData = async () => {
@@ -258,11 +262,39 @@ function CarDetails() {
                     {car.transmission}
                   </div>
                 </div>
+
+                {/* Apply to Buy Button */}
+                <div className="mt-6">
+                  {currentUser && currentUser.uid === car.userId ? (
+                    <Link
+                      to={`/edit-car/${id}`}
+                      className="block w-full text-center bg-primary text-white py-3 px-6 rounded-lg hover:bg-primary-dark transition-colors"
+                    >
+                      Düzəliş Et
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => setShowApplicationForm(true)}
+                      className="w-full bg-primary text-white py-3 px-6 rounded-lg hover:bg-primary-dark transition-colors"
+                    >
+                      Almaq üçün Müraciət Et
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Application Form Modal */}
+      {showApplicationForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="max-w-lg w-full">
+            <ApplicationForm carId={id} onClose={() => setShowApplicationForm(false)} />
+          </div>
+        </div>
+      )}
 
       {/* Similar Cars Section */}
       {similarCars.length > 0 && (
@@ -270,8 +302,8 @@ function CarDetails() {
           <div className="max-w-7xl mx-auto">
             <h2 className="text-2xl font-bold mb-8 text-neutral-dark">Oxşar Avtomobillər</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {similarCars.map((similarCar) => (
-                <SimilarCarCard key={similarCar.id} car={similarCar} />
+              {similarCars.map((car) => (
+                <SimilarCarCard key={car.id} car={car} />
               ))}
             </div>
           </div>
