@@ -149,49 +149,54 @@ export const validateCarForm = (formData, requireImage = true) => {
   // Required text fields
   ['brand', 'model', 'color'].forEach((field) => {
     if (!formData[field] || formData[field].trim() === '') {
-      errors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
+      const fieldNames = {
+        brand: 'Marka',
+        model: 'Model',
+        color: 'Rəng',
+      };
+      errors[field] = `${fieldNames[field]} seçilməlidir`;
     }
   });
 
   // Description
   if (!formData.description || formData.description.trim().length < 10) {
-    errors.description = 'Please provide a detailed description (at least 10 characters)';
+    errors.description = 'Ətraflı təsvir daxil edin (ən azı 10 simvol)';
   }
 
   // Year
   if (!formData.year || isNaN(formData.year)) {
-    errors.year = 'Please select a valid year';
+    errors.year = 'Düzgün il seçin';
   } else {
     const year = parseInt(formData.year);
     const currentYear = new Date().getFullYear();
     if (year < 1900 || year > currentYear) {
-      errors.year = `Year must be between 1900 and ${currentYear}`;
+      errors.year = `İl 1900 və ${currentYear} arasında olmalıdır`;
     }
   }
 
   // Price
   if (!formData.price || isNaN(formData.price)) {
-    errors.price = 'Please enter a valid price';
+    errors.price = 'Düzgün qiymət daxil edin';
   } else {
     const price = parseInt(formData.price);
     if (price <= 0) {
-      errors.price = 'Price must be greater than 0';
+      errors.price = 'Qiymət 0-dan böyük olmalıdır';
     }
   }
 
   // Mileage
   if (!formData.mileage || isNaN(formData.mileage)) {
-    errors.mileage = 'Please enter a valid mileage';
+    errors.mileage = 'Düzgün yürüş daxil edin';
   } else {
     const mileage = parseInt(formData.mileage);
     if (mileage < 0) {
-      errors.mileage = 'Mileage cannot be negative';
+      errors.mileage = 'Yürüş mənfi ola bilməz';
     }
   }
 
   // Image validation
   if (requireImage && (!formData.images || formData.images.length === 0)) {
-    errors.image = 'Please upload at least one image of the car';
+    errors.image = 'Ən azı bir şəkil yükləyin';
   }
 
   return errors;

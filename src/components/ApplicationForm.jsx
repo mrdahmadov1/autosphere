@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 import { useAuth } from '../context/useAuth';
 import { useNotification } from '../context/NotificationContext';
 import { database, ref, push, set } from '../firebase/config';
@@ -11,39 +12,12 @@ function ApplicationForm({ carId, onClose }) {
     phone: '',
     message: '',
   });
-  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [formTouched, setFormTouched] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const { currentUser } = useAuth();
   const { success, error: showError } = useNotification();
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Ad tələb olunur';
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email tələb olunur';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Düzgün email ünvanı daxil edin';
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Telefon nömrəsi tələb olunur';
-    }
-
-    if (!formData.message.trim()) {
-      newErrors.message = 'Mesaj tələb olunur';
-    } else if (formData.message.trim().length < 10) {
-      newErrors.message = 'Mesaj ən azı 10 simvol olmalıdır';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -57,28 +31,49 @@ function ApplicationForm({ carId, onClose }) {
     }));
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Ad daxil edilməlidir';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email daxil edilməlidir';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Düzgün email daxil edin';
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Telefon nömrəsi daxil edilməlidir';
+    }
+
+    if (!formData.message.trim()) {
+      newErrors.message = 'Mesaj daxil edilməlidir';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
-      showError('Xahiş edirik bütün xanaları düzgün doldurun');
       return;
     }
 
     try {
       setLoading(true);
 
-      // Check if user is authenticated
-      if (!currentUser) {
-        showError('Müraciət etmək üçün daxil olmalısınız');
-        return;
-      }
-
       // Create application data
       const applicationData = {
-        ...formData,
         carId,
         userId: currentUser.uid,
+        userName: currentUser.displayName || formData.name,
+        userEmail: currentUser.email || formData.email,
+        phone: formData.phone,
+        message: formData.message,
         status: 'pending',
         createdAt: Date.now(),
       };
@@ -92,19 +87,42 @@ function ApplicationForm({ carId, onClose }) {
       onClose();
     } catch (err) {
       console.error('Error submitting application:', err);
-      showError('Müraciət göndərilərkən xəta baş verdi');
+      showError('Müraciət göndərilə bilmədi. Zəhmət olmasa yenidən cəhd edin.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-card p-6">
-      <h2 className="text-2xl font-bold mb-6 text-neutral-dark">Avtomobil Almaq üçün Müraciət</h2>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-neutral-dark">Müraciət Et</h2>
+        <button
+          onClick={onClose}
+          className="text-neutral/70 hover:text-neutral-dark transition-colors"
+          aria-label="Close"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <FormGroup label="Ad" error={formTouched.name && errors.name} required>
           <TextField
+            type="text"
             name="name"
             value={formData.name}
             onChange={handleChange}
@@ -147,10 +165,16 @@ function ApplicationForm({ carId, onClose }) {
         </FormGroup>
 
         <div className="flex justify-end space-x-4">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            disabled={loading}
+            className="px-6 py-3"
+          >
             Ləğv et
           </Button>
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} className="px-6 py-3">
             {loading ? 'Göndərilir...' : 'Müraciət et'}
           </Button>
         </div>
@@ -158,5 +182,10 @@ function ApplicationForm({ carId, onClose }) {
     </div>
   );
 }
+
+ApplicationForm.propTypes = {
+  carId: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
 
 export default ApplicationForm;

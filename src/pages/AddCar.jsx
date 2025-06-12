@@ -364,7 +364,7 @@ function AddCar() {
     // Validate entire form
     const isValid = validateForm();
     if (!isValid) {
-      showError('Please fix the errors in the form before submitting.');
+      showError('Zəhmət olmasa formada olan xətaları düzəldin.');
       return;
     }
 
@@ -373,7 +373,7 @@ function AddCar() {
 
       // Check if user is authenticated
       if (!currentUser) {
-        showError('You must be logged in to add a car.');
+        showError('Avtomobil əlavə etmək üçün daxil olmalısınız.');
         navigate('/login');
         return;
       }
@@ -397,37 +397,18 @@ function AddCar() {
 
         // Handle image updates
         if (images.length > 0) {
-          // Upload new images to database
-          imagePaths = await uploadImagesToDatabase(images, carId);
+          try {
+            // Upload new images to database
+            imagePaths = await uploadImagesToDatabase(images, carId);
 
-          // If there were old images, delete them
-          if (originalCar.imagePaths && originalCar.imagePaths.length > 0) {
-            await deleteImagesFromDatabase(originalCar.imagePaths);
-          }
-        } else {
-          // If no new images are uploaded, check if we should keep or delete existing images
-          if (imagePreviews.length === 0) {
-            // If all images were removed, delete the old images
+            // If there were old images, delete them
             if (originalCar.imagePaths && originalCar.imagePaths.length > 0) {
               await deleteImagesFromDatabase(originalCar.imagePaths);
             }
-            imagePaths = []; // Set empty array since all images were removed
-          } else {
-            // Keep only the images that are still in imagePreviews
-            const remainingImagePaths = originalCar.imagePaths.filter(
-              (_, index) => imagePreviews[index] !== undefined
-            );
-
-            // Delete the removed images
-            const removedImagePaths = originalCar.imagePaths.filter(
-              (_, index) => imagePreviews[index] === undefined
-            );
-
-            if (removedImagePaths.length > 0) {
-              await deleteImagesFromDatabase(removedImagePaths);
-            }
-
-            imagePaths = remainingImagePaths;
+          } catch (imageError) {
+            console.error('Error handling images:', imageError);
+            showError('Şəkillərin yüklənməsində xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.');
+            return;
           }
         }
 
@@ -438,56 +419,52 @@ function AddCar() {
         carData.updatedAt = Date.now();
         carData.imagePaths = imagePaths;
 
-        // First, update the car in Realtime Database
-        await update(carRef, carData);
+        try {
+          // First, update the car in Realtime Database
+          await update(carRef, carData);
 
-        // Create updated car summary for user's array
-        const carSummary = {
-          id: carId,
-          brand: formData.brand,
-          model: formData.model,
-          year: parseInt(formData.year),
-          price: parseInt(formData.price),
-          mileage: parseInt(formData.mileage),
-          color: formData.color,
-          transmission: formData.transmission,
-          fuel: formData.fuel,
-          imagePaths: imagePaths,
-          updatedAt: Date.now(),
-        };
+          // Create updated car summary for user's array
+          const carSummary = {
+            id: carId,
+            brand: formData.brand,
+            model: formData.model,
+            year: parseInt(formData.year),
+            price: parseInt(formData.price),
+            mileage: parseInt(formData.mileage),
+            color: formData.color,
+            transmission: formData.transmission,
+            fuel: formData.fuel,
+            imagePaths: imagePaths,
+            updatedAt: Date.now(),
+          };
 
-        // Get current user data
-        const userRef = ref(database, `users/${currentUser.uid}`);
-        const userSnapshot = await get(userRef);
+          // Get current user data
+          const userRef = ref(database, `users/${currentUser.uid}`);
+          const userSnapshot = await get(userRef);
 
-        if (userSnapshot.exists()) {
-          // Get current cars object
-          const userData = userSnapshot.val();
-          const userCars = userData.cars || {};
+          if (userSnapshot.exists()) {
+            // Get current cars object
+            const userData = userSnapshot.val();
+            const userCars = userData.cars || {};
 
-          // Update the car in the user's cars object
-          userCars[carId] = carSummary;
+            // Update the car in the user's cars object
+            userCars[carId] = carSummary;
 
-          // Update the user document with the updated cars
-          await update(userRef, { cars: userCars });
+            // Update the user document with the updated cars
+            await update(userRef, { cars: userCars });
 
-          // Verify the update was successful
-          const verifyRef = ref(database, `cars/${carId}`);
-          const verifySnapshot = await get(verifyRef);
-
-          if (!verifySnapshot.exists()) {
-            throw new Error('Failed to verify car update');
+            // Show success notification
+            success(`${formData.brand} ${formData.model} uğurla yeniləndi`);
+            navigate('/profile');
+          } else {
+            showError('İstifadəçi məlumatları tapılmadı. Zəhmət olmasa yenidən cəhd edin.');
           }
-
-          const updatedCar = verifySnapshot.val();
-          if (!updatedCar.imagePaths || updatedCar.imagePaths.length !== imagePaths.length) {
-            throw new Error('Image paths not properly updated');
-          }
-
-          // Show success notification
-          success(`Successfully updated ${formData.brand} ${formData.model}`);
-        } else {
-          showError('Could not find user data. Please try again.');
+        } catch (updateError) {
+          console.error('Error updating car:', updateError);
+          showError(
+            'Avtomobil məlumatlarının yenilənməsində xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.'
+          );
+          return;
         }
       } else {
         try {
@@ -511,7 +488,9 @@ function AddCar() {
               carData.imagePaths = imagePaths;
             } catch (imageError) {
               console.error('Error uploading images:', imageError);
-              showError('Failed to upload images. Please try again.');
+              showError(
+                'Şəkillərin yüklənməsində xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.'
+              );
               return;
             }
           }
@@ -521,7 +500,9 @@ function AddCar() {
             await set(newCarRef, carData);
           } catch (dbError) {
             console.error('Error saving car data:', dbError);
-            showError('Failed to save car data. Please try again.');
+            showError(
+              'Avtomobil məlumatlarının yadda saxlanmasında xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.'
+            );
             return;
           }
 
@@ -562,23 +543,28 @@ function AddCar() {
                 cars: { [carId]: carSummary },
               });
             }
+
+            // Show success message
+            success(`${formData.brand} ${formData.model} uğurla əlavə edildi`);
+            navigate('/profile');
           } catch (userError) {
             console.error('Error updating user data:', userError);
-            showError('Failed to update user profile. Please try again.');
+            showError(
+              'İstifadəçi məlumatlarının yenilənməsində xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.'
+            );
             return;
           }
-
-          // Show success message
-          success(`Successfully added ${formData.brand} ${formData.model}`);
-          navigate('/profile');
         } catch (error) {
           console.error('Error in car creation process:', error);
-          showError('Failed to create car listing. Please try again.');
+          showError('Avtomobil əlavə edilməsində xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.');
         }
       }
     } catch (err) {
       console.error('Error saving car:', err);
-      showError(err.message || 'Error saving car. Please try again.');
+      showError(
+        err.message ||
+          'Avtomobilin yadda saxlanmasında xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.'
+      );
     } finally {
       setLoading(false);
     }
@@ -615,9 +601,6 @@ function AddCar() {
     [availableModels]
   );
 
-  // Flag to check if form has been touched
-  const hasBeenTouched = useMemo(() => Object.keys(formTouched).length > 0, [formTouched]);
-
   const handleBlur = (e) => {
     setFormTouched((prev) => ({
       ...prev,
@@ -641,8 +624,9 @@ function AddCar() {
                   name="brand"
                   value={formData.brand}
                   onChange={handleChange}
-                  options={carMakes.map((make) => ({ value: make, label: make }))}
+                  options={makeOptions}
                   placeholder="Marka seçin"
+                  required
                 />
               </FormGroup>
 
@@ -651,9 +635,10 @@ function AddCar() {
                   name="model"
                   value={formData.model}
                   onChange={handleChange}
-                  options={availableModels.map((model) => ({ value: model, label: model }))}
+                  options={modelOptions}
                   placeholder="Model seçin"
                   disabled={!formData.brand}
+                  required
                 />
               </FormGroup>
             </div>
@@ -667,6 +652,7 @@ function AddCar() {
                   onChange={handleChange}
                   options={yearOptions}
                   placeholder="İl seçin"
+                  required
                 />
               </FormGroup>
 
@@ -679,17 +665,20 @@ function AddCar() {
                   onBlur={handleBlur}
                   placeholder="Qiymət"
                   required
+                  min="0"
                 />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral/60">AZN</div>
               </FormGroup>
 
               <FormGroup label="Yürüş (km)" error={formTouched.mileage && errors.mileage} required>
                 <TextField
-                  type="text"
+                  type="number"
                   name="mileage"
                   value={formData.mileage}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   placeholder="Yürüş daxil edin"
+                  required
+                  min="0"
                 />
               </FormGroup>
             </div>
@@ -701,12 +690,8 @@ function AddCar() {
                   name="fuel"
                   value={formData.fuel}
                   onChange={handleChange}
-                  options={[
-                    { value: 'Benzin', label: 'Benzin' },
-                    { value: 'Dizel', label: 'Dizel' },
-                    { value: 'Elektrik', label: 'Elektrik' },
-                    { value: 'Hibrid', label: 'Hibrid' },
-                  ]}
+                  options={fuelOptions}
+                  required
                 />
               </FormGroup>
 
@@ -719,10 +704,8 @@ function AddCar() {
                   name="transmission"
                   value={formData.transmission}
                   onChange={handleChange}
-                  options={[
-                    { value: 'Avtomatik', label: 'Avtomatik' },
-                    { value: 'Mexaniki', label: 'Mexaniki' },
-                  ]}
+                  options={transmissionOptions}
+                  required
                 />
               </FormGroup>
 
@@ -733,6 +716,7 @@ function AddCar() {
                   onChange={handleChange}
                   options={colorOptions}
                   placeholder="Rəng seçin"
+                  required
                 />
               </FormGroup>
             </div>
@@ -747,8 +731,11 @@ function AddCar() {
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 placeholder="Avtomobil haqqında ətraflı məlumat yazın"
                 rows={4}
+                required
+                minLength={10}
               />
             </FormGroup>
 
@@ -764,21 +751,15 @@ function AddCar() {
                     <TextField
                       type="text"
                       value={feature}
-                      onChange={(e) => {
-                        const newFeatures = [...formData.features];
-                        newFeatures[index] = e.target.value;
-                        setFormData((prev) => ({ ...prev, features: newFeatures }));
-                        setFormTouched((prev) => ({ ...prev, features: true }));
-                      }}
+                      onChange={(e) => handleFeatureChange(index, e.target.value)}
+                      onBlur={handleBlur}
                       placeholder="Xüsusiyyət daxil edin"
+                      required={index === 0}
                     />
                     {index > 0 && (
                       <button
                         type="button"
-                        onClick={() => {
-                          const newFeatures = formData.features.filter((_, i) => i !== index);
-                          setFormData((prev) => ({ ...prev, features: newFeatures }));
-                        }}
+                        onClick={() => removeFeatureField(index)}
                         className="text-red-500 hover:text-red-700"
                       >
                         Sil
@@ -788,12 +769,7 @@ function AddCar() {
                 ))}
                 <button
                   type="button"
-                  onClick={() => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      features: [...prev.features, ''],
-                    }));
-                  }}
+                  onClick={addFeatureField}
                   className="text-primary hover:text-primary-dark"
                 >
                   + Xüsusiyyət Əlavə Et
@@ -813,11 +789,12 @@ function AddCar() {
                 accept="image/*"
                 multiple
                 label="Şəkillər Seçin"
+                required={!isEditMode}
               />
               {imagePreviews.length > 0 && (
                 <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
                   {imagePreviews.map((preview, index) => (
-                    <div key={index} className="relative group">
+                    <div key={`preview-${index}-${Date.now()}`} className="relative group">
                       <img
                         src={preview}
                         alt={`Preview ${index + 1}`}
@@ -850,13 +827,12 @@ function AddCar() {
             {/* Submit Button */}
             <div className="flex justify-end">
               <Button type="submit" disabled={loading} className="w-full md:w-auto">
-                {loading
-                  ? isEditMode
-                    ? 'Yadda Saxlanılır...'
-                    : 'Əlavə Edilir...'
-                  : isEditMode
-                  ? 'Yadda Saxla'
-                  : 'Avtomobil Əlavə Et'}
+                {(() => {
+                  if (loading) {
+                    return isEditMode ? 'Yadda Saxlanılır...' : 'Əlavə Edilir...';
+                  }
+                  return isEditMode ? 'Yadda Saxla' : 'Avtomobil Əlavə Et';
+                })()}
               </Button>
             </div>
           </form>
